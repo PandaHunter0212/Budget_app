@@ -1056,11 +1056,8 @@ function updateCreditLimitField() {
 /* Browser storage never has a password */
 function loadBrowserData() {
   data = DEFAULT_DATA();
-  const saved = localStorage.getItem('finance-data');
-  if (saved) {
-    try { data = normalize(JSON.parse(saved)); } catch { /* ignore */ }
-  }
-  data.settings.passwordHash = '';
+  localStorage.removeItem('finance-data');
+  loadedFromFetch = false;
   updateConnectionStatus();
 }
 
