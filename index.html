@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Crect x='14' y='34' width='8' height='16' rx='2' fill='%23fff' opacity='.7'/%3E%3Crect x='28' y='24' width='8' height='26' rx='2' fill='%23fff' opacity='.85'/%3E%3Crect x='42' y='13' width='8' height='37' rx='2' fill='%23fff'/%3E%3C/svg%3E">
+  <title>Finance Manager</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ===== Lock screen (shown when a password is set) ===== -->
+  <div id="lock-screen" class="overlay hidden">
+    <div class="card overlay-card">
+      <h1>🔒 Locked</h1>
+      <form id="lock-form">
+        <label for="lock-password">Password</label>
+        <input type="password" id="lock-password" autocomplete="current-password" required>
+        <p id="lock-error" class="error hidden">Incorrect password.</p>
+        <button type="submit" class="btn primary full">Unlock</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Main app ===== -->
+  <div id="app" class="hidden">
+
+    <header class="app-header">
+      <h1>💰 Finance Manager</h1>
+      <div class="header-right">
+        <span id="data-status" class="status"></span>
+        <button id="btn-lock" class="btn small hidden">🔒 Lock</button>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-page="dashboard">Dashboard</button>
+      <button class="tab" data-page="income">Income</button>
+      <button class="tab" data-page="expenses">Expenses</button>
+      <button class="tab" data-page="accounts">Accounts</button>
+      <button class="tab" data-page="investments">Investments</button>
+      <button class="tab" data-page="budget">Budget</button>
+      <button class="tab" data-page="reports">Reports</button>
+      <button class="tab" data-page="settings">Settings</button>
+    </nav>
+
+    <main>
+
+      <!-- ===== Page 1: Dashboard ===== -->
+      <section id="page-dashboard" class="page active">
+        <h2 id="dashboard-greeting">Dashboard</h2>
+
+        <div class="stat-grid">
+          <div class="card stat">
+            <span class="stat-label">Total Balance</span>
+            <span class="stat-value" id="stat-total">R 0.00</span>
+          </div>
+          <div class="card stat">
+            <span class="stat-label">Income (this month)</span>
+            <span class="stat-value income" id="stat-income-month">R 0.00</span>
+          </div>
+          <div class="card stat">
+            <span class="stat-label">Expenses (this month)</span>
+            <span class="stat-value expense" id="stat-expense-month">R 0.00</span>
+          </div>
+          <div class="card stat">
+            <span class="stat-label">Net (this month)</span>
+            <span class="stat-value" id="stat-net-month">R 0.00</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 id="budget-title">50 / 30 / 20 Budget (this month)</h3>
+          <p class="hint" id="budget-hint">Based on this month's income.</p>
+          <table>
+            <thead>
+              <tr><th>Category</th><th class="num">Target</th><th class="num">Spent</th><th class="num">Left</th><th>Status</th></tr>
+            </thead>
+            <tbody id="budget-table"></tbody>
+          </table>
+          <p class="hint" id="budget-note"></p>
+        </div>
+
+        <div class="card">
+          <h3>Account Balances</h3>
+          <table>
+            <thead>
+              <tr><th>Account</th><th>Type</th><th>Institution</th><th class="num">Balance</th></tr>
+            </thead>
+            <tbody id="accounts-summary"></tbody>
+          </table>
+          <p class="hint" id="accounts-summary-empty">No accounts yet — add some on the Accounts page.</p>
+        </div>
+
+        <div class="card">
+          <h3>Recent Transactions</h3>
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Kind</th><th>Type</th><th>Account</th><th class="num">Amount</th><th></th></tr>
+            </thead>
+            <tbody id="recent-transactions"></tbody>
+          </table>
+          <p class="hint" id="recent-empty">No transactions yet.</p>
+        </div>
+      </section>
+
+      <!-- ===== Page 2: Income ===== -->
+      <section id="page-income" class="page">
+        <h2>Income</h2>
+
+        <div class="card">
+          <h3>Add One-Time Income</h3>
+          <form id="income-form" class="form-grid">
+            <label>Amount (R)
+              <input type="number" id="income-amount" step="0.01" min="0.01" placeholder="0.00" required>
+            </label>
+            <label>Account
+              <select id="income-account" class="account-select" required></select>
+            </label>
+            <label>Type
+              <input type="text" id="income-type" list="income-types" placeholder="e.g. Salary" required>
+              <datalist id="income-types">
+                <option value="Salary"></option>
+                <option value="Freelance"></option>
+                <option value="Business"></option>
+                <option value="Investment"></option>
+                <option value="Interest"></option>
+                <option value="Gift"></option>
+                <option value="Refund"></option>
+                <option value="Other"></option>
+              </datalist>
+            </label>
+            <label>Date
+              <input type="date" id="income-date" required>
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn primary">Add Income</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Recurring Income</h3>
+          <p class="hint">Set up income that happens regularly. Press <strong>Receive</strong> whenever it comes in to record it.</p>
+          <form id="rec-income-form" class="form-grid">
+            <label>Amount (R)
+              <input type="number" id="rec-income-amount" step="0.01" min="0.01" placeholder="0.00" required>
+            </label>
+            <label>Account
+              <select id="rec-income-account" class="account-select" required></select>
+            </label>
+            <label>Type
+              <input type="text" id="rec-income-type" list="income-types" placeholder="e.g. Salary" required>
+            </label>
+            <div class="form-actions">
+              <button type="submit" id="rec-income-submit" class="btn">Add Recurring Income</button>
+              <button type="button" id="rec-income-cancel" class="btn hidden">Cancel</button>
+            </div>
+          </form>
+          <ul id="rec-income-list" class="rec-list"></ul>
+        </div>
+
+        <div class="card">
+          <h3>Income History</h3>
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Type</th><th>Account</th><th class="num">Amount</th><th></th></tr>
+            </thead>
+            <tbody id="income-list"></tbody>
+          </table>
+          <p class="hint" id="income-empty">No income recorded yet.</p>
+        </div>
+      </section>
+
+      <!-- ===== Page 3: Expenses ===== -->
+      <section id="page-expenses" class="page">
+        <h2>Expenses</h2>
+
+        <div class="card">
+          <h3>Add One-Time Expense</h3>
+          <form id="expense-form" class="form-grid">
+            <label>Amount (R)
+              <input type="number" id="expense-amount" step="0.01" min="0.01" placeholder="0.00" required>
+            </label>
+            <label>Account
+              <select id="expense-account" class="account-select" required></select>
+            </label>
+            <label>Type
+              <input type="text" id="expense-type" list="expense-types" placeholder="e.g. Groceries" required>
+              <datalist id="expense-types">
+                <option value="Groceries"></option>
+                <option value="Rent / Mortgage"></option>
+                <option value="Transport"></option>
+                <option value="Fuel"></option>
+                <option value="Utilities"></option>
+                <option value="Insurance"></option>
+                <option value="Entertainment"></option>
+                <option value="Dining Out"></option>
+                <option value="Health"></option>
+                <option value="Education"></option>
+                <option value="Subscriptions"></option>
+                <option value="Other"></option>
+              </datalist>
+            </label>
+            <label>Category
+              <select id="expense-category" required>
+                <option value="" disabled selected>Choose…</option>
+                <option value="need">Need</option>
+                <option value="want">Want</option>
+                <option value="investment">Investment</option>
+              </select>
+            </label>
+            <label>Date
+              <input type="date" id="expense-date" required>
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn primary">Add Expense</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Recurring Expenses</h3>
+          <p class="hint">Set up expenses that happen regularly. Press <strong>Pay</strong> whenever they go off to record them.</p>
+          <form id="rec-expense-form" class="form-grid">
+            <label>Amount (R)
+              <input type="number" id="rec-expense-amount" step="0.01" min="0.01" placeholder="0.00" required>
+            </label>
+            <label>Account
+              <select id="rec-expense-account" class="account-select" required></select>
+            </label>
+            <label>Type
+              <input type="text" id="rec-expense-type" list="expense-types" placeholder="e.g. Rent / Mortgage" required>
+            </label>
+            <label>Category
+              <select id="rec-expense-category" required>
+                <option value="" disabled selected>Choose…</option>
+                <option value="need">Need</option>
+                <option value="want">Want</option>
+                <option value="investment">Investment</option>
+              </select>
+            </label>
+            <div class="form-actions">
+              <button type="submit" id="rec-expense-submit" class="btn">Add Recurring Expense</button>
+              <button type="button" id="rec-expense-cancel" class="btn hidden">Cancel</button>
+            </div>
+          </form>
+          <ul id="rec-expense-list" class="rec-list"></ul>
+        </div>
+
+        <div class="card">
+          <h3>Expense History</h3>
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Type</th><th>Category</th><th>Account</th><th class="num">Amount</th><th></th></tr>
+            </thead>
+            <tbody id="expense-list"></tbody>
+          </table>
+          <p class="hint" id="expense-empty">No expenses recorded yet.</p>
+        </div>
+      </section>
+
+      <!-- ===== Page 4: Accounts ===== -->
+      <section id="page-accounts" class="page">
+        <h2>Accounts</h2>
+
+        <div class="card">
+          <h3 id="account-form-title">Add Account</h3>
+          <form id="account-form" class="form-grid">
+            <label>Account Name
+              <input type="text" id="acc-name" placeholder="e.g. Everyday Cheque" required>
+            </label>
+            <label>Type
+              <select id="acc-type" required>
+                <option value="Checking">Checking</option>
+                <option value="Savings">Savings</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Investment">Investment</option>
+                <option value="Cash">Cash</option>
+                <option value="Loan">Loan</option>
+                <option value="Other">Other</option>
+              </select>
+            </label>
+            <label>Held At (Institution)
+              <select id="acc-institution" required>
+                <option value="Absa">Absa</option>
+                <option value="Capitec">Capitec</option>
+                <option value="Discovery Bank">Discovery Bank</option>
+                <option value="FNB">FNB</option>
+                <option value="Investec">Investec</option>
+                <option value="Nedbank">Nedbank</option>
+                <option value="Standard Bank">Standard Bank</option>
+                <option value="TymeBank">TymeBank</option>
+                <option value="African Bank">African Bank</option>
+                <option value="Other">Other</option>
+              </select>
+            </label>
+            <label>Starting Balance (R)
+              <input type="number" id="acc-balance" step="0.01" placeholder="0.00" required>
+            </label>
+            <label class="span-2">Purpose
+              <input type="text" id="acc-purpose" placeholder="e.g. Monthly spending, emergency fund…">
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn primary" id="acc-submit">Add Account</button>
+              <button type="button" class="btn hidden" id="acc-cancel">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>My Accounts</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th><th>Type</th><th>Held At</th>
+                <th class="num">Starting</th><th class="num">Current</th>
+                <th>Purpose</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="accounts-table"></tbody>
+          </table>
+          <p class="hint" id="accounts-empty">No accounts yet. Add your first account above.</p>
+        </div>
+      </section>
+
+      <!-- ===== Investments ===== -->
+      <section id="page-investments" class="page">
+        <h2>Investments</h2>
+
+        <div class="stat-grid">
+          <div class="card stat">
+            <span class="stat-label">Monthly Investing</span>
+            <span class="stat-value" id="inv-stat-monthly">R 0.00</span>
+          </div>
+          <div class="card stat">
+            <span class="stat-label">Active Investments</span>
+            <span class="stat-value" id="inv-stat-active">0</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 id="inv-form-title">Add Investment</h3>
+          <form id="investment-form" class="form-grid">
+            <label>Investment Name
+              <input type="text" id="inv-name" placeholder="e.g. Retirement Annuity" required>
+            </label>
+            <label>Monthly Amount (R)
+              <input type="number" id="inv-amount" step="0.01" min="0" placeholder="0.00" required>
+            </label>
+            <label>Pay From Account
+              <select id="inv-account" class="account-select" required></select>
+            </label>
+            <label>Start Date
+              <input type="date" id="inv-start" required>
+            </label>
+            <label>Term (Years)
+              <input type="number" id="inv-years" min="0" step="1" value="5" required>
+            </label>
+            <label>Term (Extra Months)
+              <input type="number" id="inv-months" min="0" max="11" step="1" value="0" required>
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn primary" id="inv-submit">Add Investment</button>
+              <button type="button" class="btn hidden" id="inv-cancel">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>My Investments</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th><th class="num">Per Month</th><th>Account</th><th>Start</th><th>Term</th><th>Expected End</th>
+                <th>Status</th><th class="num">Total Planned</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="investments-table"></tbody>
+          </table>
+          <p class="hint" id="investments-empty">No investments yet. Add your first one above.</p>
+        </div>
+      </section>
+
+      <!-- ===== Budget planner ===== -->
+      <section id="page-budget" class="page">
+        <h2>Budget Planner</h2>
+        <p class="hint">Add your planned monthly expenses to see whether you stay on track with your budget split. Untick an item to test a "what if" without deleting it.</p>
+
+        <div class="card">
+          <h3>Budget Split</h3>
+          <p class="hint">How your monthly income is divided. Used by the budget card on the Dashboard and the plan below. Must add up to 100%.</p>
+          <form id="split-form" class="form-grid">
+            <label>Needs (%)
+              <input type="number" id="split-need" min="0" max="100" step="1" required>
+            </label>
+            <label>Wants (%)
+              <input type="number" id="split-want" min="0" max="100" step="1" required>
+            </label>
+            <label>Investing (%)
+              <input type="number" id="split-investment" min="0" max="100" step="1" required>
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn primary">Save Split</button>
+              <button type="button" class="btn" id="split-reset">Reset to 50/30/20</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Plan vs Budget</h3>
+          <table>
+            <thead>
+              <tr><th>Category</th><th class="num">Budget</th><th class="num">Planned</th><th class="num">Left</th><th>Status</th></tr>
+            </thead>
+            <tbody id="plan-summary"></tbody>
+          </table>
+          <p id="plan-verdict" class="hint"></p>
+        </div>
+
+        <div class="card">
+          <h3 id="pinc-form-title">Add Planned Income</h3>
+          <form id="pinc-form" class="form-grid">
+            <label>Name
+              <input type="text" id="pinc-name" placeholder="e.g. Salary" required>
+            </label>
+            <label>Monthly Amount (R)
+              <input type="number" id="pinc-amount" step="0.01" min="0.01" placeholder="0.00" required>
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn primary" id="pinc-submit">Add Planned Income</button>
+              <button type="button" class="btn hidden" id="pinc-cancel">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Planned Income</h3>
+          <p class="hint">Recurring income is included automatically. The budget above is calculated from the ticked items.</p>
+          <table>
+            <thead>
+              <tr><th>Include</th><th>Name</th><th class="num">Per Month</th><th></th></tr>
+            </thead>
+            <tbody id="pinc-list"></tbody>
+          </table>
+          <p class="hint" id="pinc-empty">No planned income yet.</p>
+        </div>
+
+        <div class="card">
+          <h3 id="plan-form-title">Add Planned Expense</h3>
+          <form id="plan-form" class="form-grid">
+            <label>Name
+              <input type="text" id="plan-name" placeholder="e.g. New car instalment" required>
+            </label>
+            <label>Monthly Amount (R)
+              <input type="number" id="plan-amount" step="0.01" min="0.01" placeholder="0.00" required>
+            </label>
+            <label>Category
+              <select id="plan-category" required>
+                <option value="need">Need</option>
+                <option value="want">Want</option>
+                <option value="investment">Investment</option>
+              </select>
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn primary" id="plan-submit">Add Planned Expense</button>
+              <button type="button" class="btn hidden" id="plan-cancel">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Planned Expenses</h3>
+          <table>
+            <thead>
+              <tr><th>Include</th><th>Name</th><th>Category</th><th class="num">Per Month</th><th></th></tr>
+            </thead>
+            <tbody id="plan-list"></tbody>
+          </table>
+          <p class="hint" id="plan-empty">No planned expenses yet.</p>
+        </div>
+      </section>
+
+      <!-- ===== Page 5: Settings ===== -->
+      <section id="page-reports" class="page"></section>
+
+      <section id="page-settings" class="page">
+        <h2>Settings</h2>
+
+        <div class="card">
+          <h3>Appearance</h3>
+          <label class="inline-label">Theme
+            <select id="set-theme">
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="card">
+          <h3>Password Lock</h3>
+          <p class="hint">Locks the app when it opens. Note: this is a simple screen lock, not encryption.</p>
+          <form id="password-form" class="form-grid">
+            <label>New Password
+              <input type="password" id="set-password" autocomplete="new-password" placeholder="Leave empty to keep current">
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn primary">Set / Change Password</button>
+              <button type="button" class="btn danger" id="btn-clear-password">Remove Password</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Data</h3>
+          <p>Storage: <strong id="data-file-info">—</strong></p>
+          <div class="btn-row">
+            <button class="btn" id="btn-link-file">Link File</button>
+            <button class="btn" id="btn-disconnect-file">Disconnect</button>
+            <button class="btn" id="btn-export">Export backup (JSON)</button>
+            <label class="btn file-label">
+              Import backup…
+              <input type="file" id="import-file" accept="application/json,.json" hidden>
+            </label>
+          </div>
+        </div>
+
+        <div class="card danger-zone">
+          <h3>Danger Zone</h3>
+          <button class="btn danger" id="btn-clear-all">Delete ALL data</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script src="reports.js"></script>
+</body>
+</html>
