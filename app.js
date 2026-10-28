@@ -138,7 +138,7 @@ async function loadFromFile() {
 }
 
 /** One-time link to finance-data.json; afterwards saves go straight to the file. */
-async function linkDataFile() {
+async function linkDataFile(fresh = false) {
   try {
     const [handle] = await window.showOpenFilePicker({
       types: [{ description: 'JSON data', accept: { 'application/json': ['.json'] } }],
@@ -146,20 +146,24 @@ async function linkDataFile() {
     const opts = { mode: 'readwrite' };
     if ((await handle.queryPermission(opts)) !== 'granted'
         && (await handle.requestPermission(opts)) !== 'granted') return;
-    fileHandle = handle;
-    await idbSet('dataFileHandle', handle); // remembered silently for future sessions
-
-    // Keep the newest copy between the linked file and current data
+    // The file's own data (including its own password) wins; an empty file starts from the current data
+    let fileData = null;
     try {
       const text = await (await handle.getFile()).text();
-      if (text.trim()) {
-        const fileData = normalize(JSON.parse(text));
-        if ((fileData.meta.updatedAt || 0) > (data.meta.updatedAt || 0)) data = fileData;
-      }
-    } catch { /* unreadable file — keep current data */ }
+      if (text.trim()) fileData = normalize(JSON.parse(text));
+    } catch {
+      return alert('The selected file is not valid JSON. Please choose the correct data file.');
+    }
+    fileHandle = handle;
+    await idbSet('dataFileHandle', handle); // remembered silently for future sessions
+    if (fileData) data = fileData;
+    else {
+      if (fresh) data = DEFAULT_DATA();
+      data.settings.passwordHash = ''; // a browser-storage password must never carry into a file
+    }
 
     await commit();
-    localStorage.removeItem('finance-data'); // the file is now the only store
+    startApp();
     updateConnectionStatus();
   } catch (err) {
     if (err.name !== 'AbortError') alert(`Could not link the file: ${err.message}`);
@@ -308,7 +312,6 @@ function renderAll() {
   renderSettings();
   renderReports();
   updateConnectionStatus();
-  applyLockState();
 }
 
 function renderDashboard() {
@@ -683,6 +686,7 @@ function renderSettings() {
   $('#btn-link-file').classList.toggle('hidden', Boolean(fileHandle) || !supportsFileApi);
   $('#btn-disconnect-file').classList.toggle('hidden', !fileHandle);
   $('#btn-lock').classList.toggle('hidden', !data.settings.passwordHash);
+  $('#password-card').classList.toggle('hidden', !fileHandle);
 }
 
 /* ================= Theme & lock ================= */
@@ -693,6 +697,8 @@ function applyTheme() {
 function applyLockState() {
   const locked = Boolean(data.settings.passwordHash);
   $('#lock-screen').classList.toggle('hidden', !locked);
+  $('#lock-change-file').classList.toggle('hidden', !supportsFileApi);
+  $('#lock-error').classList.add('hidden');
   if (locked) $('#lock-password').focus();
 }
 
@@ -702,6 +708,7 @@ function startApp() {
   applyTheme();
   $$('input[type="date"]').forEach((i) => { if (!i.value) i.value = today(); });
   renderAll();
+  applyLockState();
 }
 
 /* ================= Events ================= */
@@ -725,6 +732,14 @@ function bindEvents() {
     }
   });
   $('#btn-lock').addEventListener('click', applyLockState);
+  $('#lock-change-file').addEventListener('click', () => linkDataFile(true));
+  $('#lock-disconnect').addEventListener('click', async () => {
+    if (!confirm('Disconnect from this file and work on browser storage instead?')) return;
+    fileHandle = null;
+    await idbDel('dataFileHandle');
+    loadBrowserData();
+    startApp();
+  });
 
   // One-time income / expense forms
   $('#income-form').addEventListener('submit', (e) => handleTxSubmit(e, 'income'));
@@ -788,11 +803,12 @@ function bindEvents() {
     await commit();
   });
 
-  $('#btn-link-file').addEventListener('click', linkDataFile);
+  $('#btn-link-file').addEventListener('click', () => linkDataFile());
   $('#btn-disconnect-file').addEventListener('click', async () => {
     if (!confirm('Disconnect from the data file? Your data will be kept in this browser from now on.')) return;
     fileHandle = null;
     await idbDel('dataFileHandle');
+    data.settings.passwordHash = ''; // passwords only belong to files
     await commit(); // saves the current data to browser storage
   });
 
@@ -1026,6 +1042,17 @@ function resetAccountForm() {
   $('#acc-cancel').classList.add('hidden');
 }
 
+/* Browser storage never has a password */
+function loadBrowserData() {
+  data = DEFAULT_DATA();
+  const saved = localStorage.getItem('finance-data');
+  if (saved) {
+    try { data = normalize(JSON.parse(saved)); } catch { /* ignore */ }
+  }
+  data.settings.passwordHash = '';
+  updateConnectionStatus();
+}
+
 /* ================= Init ================= */
 async function init() {
   bindEvents();
@@ -1089,6 +1116,7 @@ async function init() {
   } else if (localData) {
     data = localData;
   }
+  data.settings.passwordHash = '';
   startApp();
 }
 

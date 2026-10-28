@@ -18,6 +18,8 @@
         <input type="password" id="lock-password" autocomplete="current-password" required>
         <p id="lock-error" class="error hidden">Incorrect password.</p>
         <button type="submit" class="btn primary full">Unlock</button>
+        <button type="button" class="btn full" id="lock-change-file">Change file</button>
+        <button type="button" class="btn danger full" id="lock-disconnect">Disconnect (use browser storage)</button>
       </form>
     </div>
   </div>
@@ -497,9 +499,9 @@
           </label>
         </div>
 
-        <div class="card">
+        <div class="card" id="password-card">
           <h3>Password Lock</h3>
-          <p class="hint">Locks the app when it opens. Note: this is a simple screen lock, not encryption.</p>
+          <p class="hint">Locks this data file when it opens (only available while a file is linked). Note: this is a simple screen lock, not encryption.</p>
           <form id="password-form" class="form-grid">
             <label>New Password
               <input type="password" id="set-password" autocomplete="new-password" placeholder="Leave empty to keep current">
