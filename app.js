@@ -801,8 +801,10 @@ function bindEvents() {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = fileHandle ? fileHandle.name : DATA_FILE_NAME;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(a.href);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
 
   $('#import-file').addEventListener('change', async (e) => {
