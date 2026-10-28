@@ -300,6 +300,9 @@
             <label>Starting Balance (R)
               <input type="number" id="acc-balance" step="0.01" placeholder="0.00" required>
             </label>
+            <label id="acc-credit-limit-field" class="hidden">Credit Limit (R)
+              <input type="number" id="acc-credit-limit" min="0" step="0.01" placeholder="0.00">
+            </label>
             <label class="span-2">Purpose
               <input type="text" id="acc-purpose" placeholder="e.g. Monthly spending, emergency fund…">
             </label>
@@ -316,7 +319,7 @@
             <thead>
               <tr>
                 <th>Name</th><th>Type</th><th>Held At</th>
-                <th class="num">Starting</th><th class="num">Current</th>
+                <th class="num">Starting</th><th class="num">Credit Limit</th><th class="num">Current</th>
                 <th>Purpose</th><th></th>
               </tr>
             </thead>

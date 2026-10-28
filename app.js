@@ -5,7 +5,7 @@ const DATA_FILE_NAME = 'finance-data.json';
 const DEFAULT_DATA = () => ({
   meta: { updatedAt: 0 }, // bumped on every save, used to pick the newest copy
   settings: { passwordHash: '', theme: 'light', planExcluded: [], budgetSplit: { need: 50, want: 30, investment: 20 } },
-  accounts: [],     // { id, name, type, institution, startingBalance, purpose }
+  accounts: [],     // { id, name, type, institution, startingBalance, creditLimit, purpose }
   transactions: [], // { id, kind: 'income'|'expense', amount, accountId, type, date, ts, recurringId? }
   recurring: [],    // { id, kind, amount, accountId, type, lastApplied }
   investments: [],  // { id, name, monthly, start, end }
@@ -201,7 +201,8 @@ function accountBalance(accountId) {
   if (!acc) return 0;
   return data.transactions
     .filter((t) => t.accountId === accountId)
-    .reduce((bal, t) => bal + (t.kind === 'income' ? t.amount : -t.amount), acc.startingBalance);
+    .reduce((bal, t) => bal + (t.kind === 'income' ? t.amount : -t.amount),
+      (Number(acc.startingBalance) || 0) + (acc.type === 'Credit Card' ? Number(acc.creditLimit) || 0 : 0));
 }
 
 function accountName(id) {
@@ -397,6 +398,7 @@ function renderAccounts() {
       <td>${esc(a.type)}</td>
       <td>${esc(a.institution)}</td>
       <td class="num">${fmt(a.startingBalance)}</td>
+      <td class="num">${a.type === 'Credit Card' ? fmt(Number(a.creditLimit) || 0) : '—'}</td>
       <td class="num"><strong>${fmt(accountBalance(a.id))}</strong></td>
       <td>${esc(a.purpose || '—')}</td>
       <td>
@@ -753,6 +755,7 @@ function bindEvents() {
 
   // Account form (add / edit)
   $('#account-form').addEventListener('submit', handleAccountSubmit);
+  $('#acc-type').addEventListener('change', updateCreditLimitField);
   $('#acc-cancel').addEventListener('click', resetAccountForm);
 
   $('#investment-form').addEventListener('submit', handleInvestmentSubmit);
@@ -1005,6 +1008,7 @@ async function handleAccountSubmit(e) {
     type: $('#acc-type').value,
     institution: $('#acc-institution').value,
     startingBalance: parseFloat($('#acc-balance').value) || 0,
+    creditLimit: $('#acc-type').value === 'Credit Card' ? parseFloat($('#acc-credit-limit').value) || 0 : 0,
     purpose: $('#acc-purpose').value.trim(),
   };
   if (!fields.name) return;
@@ -1027,6 +1031,8 @@ function startEditAccount(id) {
   $('#acc-type').value = acc.type;
   $('#acc-institution').value = acc.institution;
   $('#acc-balance').value = acc.startingBalance;
+  $('#acc-credit-limit').value = acc.creditLimit || 0;
+  updateCreditLimitField();
   $('#acc-purpose').value = acc.purpose || '';
   $('#account-form-title').textContent = 'Edit Account';
   $('#acc-submit').textContent = 'Save Changes';
@@ -1037,9 +1043,14 @@ function startEditAccount(id) {
 function resetAccountForm() {
   editingAccountId = null;
   $('#account-form').reset();
+  updateCreditLimitField();
   $('#account-form-title').textContent = 'Add Account';
   $('#acc-submit').textContent = 'Add Account';
   $('#acc-cancel').classList.add('hidden');
+}
+
+function updateCreditLimitField() {
+  $('#acc-credit-limit-field').classList.toggle('hidden', $('#acc-type').value !== 'Credit Card');
 }
 
 /* Browser storage never has a password */

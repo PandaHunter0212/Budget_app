@@ -38,11 +38,12 @@ const SOURCES = {
   accounts: {
     label: 'Accounts',
     dims: ['Name', 'Type', 'Institution', 'Purpose'],
-    nums: ['Balance', 'Starting balance'],
+    nums: ['Balance', 'Starting balance', 'Credit limit'],
     records() {
       return data.accounts.map((a) => ({
         Name: a.name || '', Type: a.type || '(none)', Institution: a.institution || '(none)', Purpose: a.purpose || '(none)',
         Balance: accountBalance(a.id), 'Starting balance': Number(a.startingBalance) || 0,
+        'Credit limit': a.type === 'Credit Card' ? Number(a.creditLimit) || 0 : 0,
       }));
     },
   },
