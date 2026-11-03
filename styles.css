@@ -318,3 +318,4 @@ th { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-
 .rv-title { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 .rv-title .btn-row { margin: 0 0 16px; }
 .rv-title label.btn { cursor: pointer; }
+.overlay-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }

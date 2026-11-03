@@ -15,8 +15,8 @@ const DEFAULT_DATA = () => ({
 });
 
 let data = DEFAULT_DATA();
+let pendingFileHandle = null; // remembered file awaiting a permission click
 let fileHandle = null;       // remembered file link, if previously granted
-let loadedFromFetch = false; // data came from finance-data.json next to the app
 let editingAccountId = null;
 let editingInvestmentId = null;
 let editingPlanId = null;
@@ -76,7 +76,7 @@ function setStatus(msg, kind) {
 
 function updateConnectionStatus() {
   if (fileHandle) setStatus('Connected to ' + fileHandle.name.replace(/\.json$/i, ''), 'ok');
-  else setStatus('Connected to Browser Storage.', 'bad');
+  else setStatus('Not connected', 'bad');
 }
 
 /* ============ IndexedDB (remembers the file handle) ============ */
@@ -128,6 +128,7 @@ async function loadFromFile() {
     } catch {
       alert('The selected file is not valid JSON. Please choose the correct data file.');
       fileHandle = null;
+      showConnectScreen();
       return;
     }
   } else {
@@ -138,7 +139,7 @@ async function loadFromFile() {
 }
 
 /** One-time link to finance-data.json; afterwards saves go straight to the file. */
-async function linkDataFile(fresh = false) {
+async function linkDataFile() {
   try {
     const [handle] = await window.showOpenFilePicker({
       types: [{ description: 'JSON data', accept: { 'application/json': ['.json'] } }],
@@ -146,7 +147,7 @@ async function linkDataFile(fresh = false) {
     const opts = { mode: 'readwrite' };
     if ((await handle.queryPermission(opts)) !== 'granted'
         && (await handle.requestPermission(opts)) !== 'granted') return;
-    // The file's own data (including its own password) wins; an empty file starts from the current data
+    // The file's own data (including its own password) wins; an empty file starts blank
     let fileData = null;
     try {
       const text = await (await handle.getFile()).text();
@@ -156,13 +157,9 @@ async function linkDataFile(fresh = false) {
     }
     fileHandle = handle;
     await idbSet('dataFileHandle', handle); // remembered silently for future sessions
-    if (fileData) data = fileData;
-    else {
-      if (fresh) data = DEFAULT_DATA();
-      data.settings.passwordHash = ''; // a browser-storage password must never carry into a file
-    }
+    data = fileData || DEFAULT_DATA();
 
-    await commit();
+    await save();
     startApp();
     updateConnectionStatus();
   } catch (err) {
@@ -171,21 +168,17 @@ async function linkDataFile(fresh = false) {
 }
 
 async function save() {
+  if (!fileHandle) return; // nothing is ever stored outside the connected file
   data.meta.updatedAt = Date.now();
-  if (fileHandle) {
-    try {
-      const writable = await fileHandle.createWritable();
-      await writable.write(JSON.stringify(data, null, 2));
-      await writable.close();
-      updateConnectionStatus();
-    } catch (err) {
-      console.error(err);
-      setStatus('⚠ Could not save to file', 'bad');
-      alert('Could not save to the data file. Try reconnecting it from Settings.');
-    }
-  } else {
-    localStorage.setItem('finance-data', JSON.stringify(data));
+  try {
+    const writable = await fileHandle.createWritable();
+    await writable.write(JSON.stringify(data, null, 2));
+    await writable.close();
     updateConnectionStatus();
+  } catch (err) {
+    console.error(err);
+    setStatus('⚠ Could not save to file', 'bad');
+    alert('Could not save to the data file. Try reconnecting it from Settings.');
   }
 }
 
@@ -680,15 +673,8 @@ function renderAccountSelects() {
 
 function renderSettings() {
   $('#set-theme').value = data.settings.theme;
-  $('#data-file-info').textContent = fileHandle
-    ? `${fileHandle.name} (linked — saves go straight to the file)`
-    : loadedFromFetch
-      ? 'finance-data.json (loaded at startup — edits save in this browser)'
-      : 'Browser storage';
-  $('#btn-link-file').classList.toggle('hidden', Boolean(fileHandle) || !supportsFileApi);
-  $('#btn-disconnect-file').classList.toggle('hidden', !fileHandle);
+  $('#data-file-info').textContent = `${fileHandle.name} (linked — saves go straight to the file)`;
   $('#btn-lock').classList.toggle('hidden', !data.settings.passwordHash);
-  $('#password-card').classList.toggle('hidden', !fileHandle);
 }
 
 /* ================= Theme & lock ================= */
@@ -706,11 +692,44 @@ function applyLockState() {
 
 /* ================= App start ================= */
 function startApp() {
+  $('#connect-screen').classList.add('hidden');
   $('#app').classList.remove('hidden');
   applyTheme();
   $$('input[type="date"]').forEach((i) => { if (!i.value) i.value = today(); });
   renderAll();
   applyLockState();
+}
+
+/** No data set connected: drop all in-memory data and offer only download / connect. */
+function showConnectScreen(pendingHandle = null) {
+  data = DEFAULT_DATA();
+  fileHandle = null;
+  pendingFileHandle = pendingHandle;
+  $('#app').classList.add('hidden');
+  $('#lock-screen').classList.add('hidden');
+  $('#lock-password').value = '';
+  $('#connect-screen').classList.remove('hidden');
+  $('#connect-reconnect').classList.toggle('hidden', !pendingHandle);
+  if (pendingHandle) $('#connect-reconnect').textContent = `Reconnect ${pendingHandle.name}`;
+  $('#connect-link').disabled = !supportsFileApi;
+  $('#connect-unsupported').classList.toggle('hidden', supportsFileApi);
+}
+
+async function disconnect(message) {
+  if (!confirm(message)) return;
+  await idbDel('dataFileHandle');
+  showConnectScreen();
+}
+
+function downloadJson(obj, name) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 /* ================= Events ================= */
@@ -734,13 +753,23 @@ function bindEvents() {
     }
   });
   $('#btn-lock').addEventListener('click', applyLockState);
-  $('#lock-change-file').addEventListener('click', () => linkDataFile(true));
-  $('#lock-disconnect').addEventListener('click', async () => {
-    if (!confirm('Disconnect from this file and work on browser storage instead?')) return;
-    fileHandle = null;
-    await idbDel('dataFileHandle');
-    loadBrowserData();
-    startApp();
+  $('#lock-change-file').addEventListener('click', () => linkDataFile());
+  $('#lock-disconnect').addEventListener('click', () => disconnect('Disconnect from this data file?'));
+
+  // Connect screen
+  $('#connect-link').addEventListener('click', () => linkDataFile());
+  $('#connect-download').addEventListener('click', () => downloadJson(DEFAULT_DATA(), DATA_FILE_NAME));
+  $('#connect-reconnect').addEventListener('click', async () => {
+    const handle = pendingFileHandle;
+    try {
+      if ((await handle.requestPermission({ mode: 'readwrite' })) !== 'granted') return;
+      fileHandle = handle;
+      await loadFromFile();
+      updateConnectionStatus();
+    } catch (err) {
+      console.warn('Could not re-grant file access:', err);
+      fileHandle = null;
+    }
   });
 
   // One-time income / expense forms
@@ -806,25 +835,9 @@ function bindEvents() {
     await commit();
   });
 
-  $('#btn-link-file').addEventListener('click', () => linkDataFile());
-  $('#btn-disconnect-file').addEventListener('click', async () => {
-    if (!confirm('Disconnect from the data file? Your data will be kept in this browser from now on.')) return;
-    fileHandle = null;
-    await idbDel('dataFileHandle');
-    data.settings.passwordHash = ''; // passwords only belong to files
-    await commit(); // saves the current data to browser storage
-  });
+  $('#btn-disconnect-file').addEventListener('click', () => disconnect('Disconnect from the data file? The app will close the data until you connect one again.'));
 
-  $('#btn-export').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = fileHandle ? fileHandle.name : DATA_FILE_NAME;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  });
+  $('#btn-export').addEventListener('click', () => downloadJson(data, fileHandle ? fileHandle.name : DATA_FILE_NAME));
 
   $('#import-file').addEventListener('change', async (e) => {
     const file = e.target.files[0];
@@ -1053,79 +1066,31 @@ function updateCreditLimitField() {
   $('#acc-credit-limit-field').classList.toggle('hidden', $('#acc-type').value !== 'Credit Card');
 }
 
-/* Browser storage never has a password */
-function loadBrowserData() {
-  data = DEFAULT_DATA();
-  localStorage.removeItem('finance-data');
-  loadedFromFetch = false;
-  updateConnectionStatus();
-}
-
 /* ================= Init ================= */
 async function init() {
   bindEvents();
+  localStorage.removeItem('finance-data'); // legacy browser copy is never used
 
-  // 1) Silently restore a remembered file link — no picker when permission persists
   if (supportsFileApi) {
     try {
       const handle = await idbGet('dataFileHandle');
-      if (handle && (await handle.queryPermission({ mode: 'readwrite' })) === 'prompt') {
-        // Browsers drop write permission between sessions; re-grant on the first click (needs a user gesture)
-        document.addEventListener('pointerdown', async function regrant() {
-          document.removeEventListener('pointerdown', regrant, true);
-          try {
-            if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
-              fileHandle = handle;
-              await loadFromFile();
-              updateConnectionStatus();
-            }
-          } catch (err) {
-            console.warn('Could not re-grant file access:', err);
-            fileHandle = null;
-          }
-        }, true);
-      } else if (handle && (await handle.queryPermission({ mode: 'readwrite' })) === 'granted') {
-        try {
+      if (handle) {
+        const perm = await handle.queryPermission({ mode: 'readwrite' });
+        if (perm === 'granted') {
           fileHandle = handle;
           await loadFromFile();
           return;
-        } catch (err) {
-          console.warn('Remembered file is gone, falling back:', err);
-          fileHandle = null;
-          await idbDel('dataFileHandle');
         }
+        // Browsers drop write permission between sessions; re-granting needs a user click
+        if (perm === 'prompt') return showConnectScreen(handle);
       }
     } catch (err) {
-      console.warn('Could not restore saved file handle:', err);
+      console.warn('Remembered file unavailable:', err);
+      fileHandle = null;
+      await idbDel('dataFileHandle').catch(() => {});
     }
   }
-
-  // 2) Load both copies — finance-data.json next to the app (when fetch works)
-  //    and browser storage — then keep whichever was saved most recently.
-  let fileData = null;
-  try {
-    const res = await fetch(DATA_FILE_NAME, { cache: 'no-store' });
-    if (res.ok) {
-      const text = await res.text();
-      if (text.trim()) fileData = normalize(JSON.parse(text));
-    }
-  } catch { /* opened via file:// or file missing — fall through */ }
-
-  let localData = null;
-  const saved = localStorage.getItem('finance-data');
-  if (saved) {
-    try { localData = normalize(JSON.parse(saved)); } catch { /* ignore */ }
-  }
-
-  loadedFromFetch = Boolean(fileData);
-  if (fileData && (!localData || (fileData.meta.updatedAt || 0) >= (localData.meta.updatedAt || 0))) {
-    data = fileData;
-    localStorage.setItem('finance-data', JSON.stringify(data)); // keep browser copy in sync
-  } else if (localData) {
-    data = localData;
-  }
-  data.settings.passwordHash = '';
-  startApp();
+  showConnectScreen();
 }
 
 document.addEventListener('DOMContentLoaded', init);

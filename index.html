@@ -19,8 +19,22 @@
         <p id="lock-error" class="error hidden">Incorrect password.</p>
         <button type="submit" class="btn primary full">Unlock</button>
         <button type="button" class="btn full" id="lock-change-file">Change file</button>
-        <button type="button" class="btn danger full" id="lock-disconnect">Disconnect (use browser storage)</button>
+        <button type="button" class="btn danger full" id="lock-disconnect">Disconnect</button>
       </form>
+    </div>
+  </div>
+
+  <!-- ===== Connect screen (shown when no data set is connected) ===== -->
+  <div id="connect-screen" class="overlay">
+    <div class="card overlay-card">
+      <h1>💰 Finance Manager</h1>
+      <p>No data set connected. Your data lives only in the file you connect.</p>
+      <div class="overlay-actions">
+        <button type="button" class="btn primary full hidden" id="connect-reconnect">Reconnect</button>
+        <button type="button" class="btn primary full" id="connect-link">Connect data set</button>
+        <button type="button" class="btn full" id="connect-download">Download fresh file</button>
+      </div>
+      <p id="connect-unsupported" class="error hidden">This browser can't link local files. Use Chrome or Edge.</p>
     </div>
   </div>
 
@@ -520,7 +534,6 @@
           <h3>Data</h3>
           <p>Storage: <strong id="data-file-info">—</strong></p>
           <div class="btn-row">
-            <button class="btn" id="btn-link-file">Link File</button>
             <button class="btn" id="btn-disconnect-file">Disconnect</button>
             <button class="btn" id="btn-export">Download data (JSON)</button>
             <label class="btn file-label">
