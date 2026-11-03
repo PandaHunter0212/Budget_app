@@ -303,11 +303,11 @@ function rowHtml(row, idx, total) {
 }
 
 function renderReports() {
-  const el = $('#page-reports');
+  const el = $('#reports-body');
   if (!el) return;
   const f = data.report.filters;
   const rows = data.report.rows;
-  el.innerHTML = `<div class="rv-title"><h2>Reports</h2>
+  el.innerHTML = `<div class="rv-title">
     <div class="btn-row">
       ${reportEditMode
         ? '<button class="btn primary" data-rv="save-mode">💾 Save</button>'

@@ -672,7 +672,6 @@ function renderAccountSelects() {
 }
 
 function renderSettings() {
-  $('#set-theme').value = data.settings.theme;
   $('#data-file-info').textContent = `${fileHandle.name} (linked — saves go straight to the file)`;
   $('#btn-lock').classList.toggle('hidden', !data.settings.passwordHash);
 }
@@ -691,10 +690,16 @@ function applyLockState() {
 }
 
 /* ================= App start ================= */
+function updateGreeting() {
+  const hour = new Date().getHours();
+  const part = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  $('#dashboard-greeting').textContent = `${part} · ${new Date().toLocaleString('en', { month: 'long' })}`;
+}
+
 function startApp() {
   $('#connect-screen').classList.add('hidden');
   $('#app').classList.remove('hidden');
-  applyTheme();
+  updateGreeting();
   $$('input[type="date"]').forEach((i) => { if (!i.value) i.value = today(); });
   renderAll();
   applyLockState();
@@ -738,6 +743,7 @@ function bindEvents() {
   $$('.tab').forEach((btn) => btn.addEventListener('click', () => {
     $$('.tab').forEach((b) => b.classList.toggle('active', b === btn));
     $$('.page').forEach((p) => p.classList.toggle('active', p.id === `page-${btn.dataset.page}`));
+    window.scrollTo(0, 0);
   }));
 
   // Lock screen
@@ -812,12 +818,6 @@ function bindEvents() {
   $('#pinc-cancel').addEventListener('click', resetPlanIncomeForm);
 
   // Settings
-  $('#set-theme').addEventListener('change', async (e) => {
-    data.settings.theme = e.target.value;
-    applyTheme();
-    await save();
-  });
-
   $('#password-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const pw = $('#set-password').value;

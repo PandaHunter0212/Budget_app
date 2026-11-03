@@ -10,9 +10,10 @@
 <body>
 
   <!-- ===== Lock screen (shown when a password is set) ===== -->
-  <div id="lock-screen" class="overlay hidden">
+  <div id="lock-screen" class="overlay hidden" style="--bg:url(img/forest-covered-fog.jpg)">
     <div class="card overlay-card">
-      <h1>🔒 Locked</h1>
+      <p class="eyebrow">Locked</p>
+      <h1>Welcome <em>back</em></h1>
       <form id="lock-form">
         <label for="lock-password">Password</label>
         <input type="password" id="lock-password" autocomplete="current-password" required>
@@ -25,9 +26,10 @@
   </div>
 
   <!-- ===== Connect screen (shown when no data set is connected) ===== -->
-  <div id="connect-screen" class="overlay">
+  <div id="connect-screen" class="overlay" style="--bg:url(img/beautiful-hills.jpg)">
     <div class="card overlay-card">
-      <h1>💰 Finance Manager</h1>
+      <p class="eyebrow">Finance Manager</p>
+      <h1>Connect <em>your</em> data</h1>
       <p>No data set connected. Your data lives only in the file you connect.</p>
       <div class="overlay-actions">
         <button type="button" class="btn primary full hidden" id="connect-reconnect">Reconnect</button>
@@ -41,31 +43,37 @@
   <!-- ===== Main app ===== -->
   <div id="app" class="hidden">
 
-    <header class="app-header">
-      <h1>💰 Finance Manager</h1>
-      <div class="header-right">
+    <header class="nav">
+      <div class="logo">
+        <svg viewBox="0 0 64 64" fill="none"><path d="M8 40 30 14l12 18-8 4 14 14-24-6z" fill="#fff" opacity=".9"/><path d="M30 14 8 40l22-8z" fill="#fff" opacity=".55"/></svg>
+        <b>Finance</b><i>Manager</i>
+      </div>
+      <nav class="tabs">
+        <button class="tab active" data-page="dashboard">Dashboard</button>
+        <button class="tab" data-page="income">Income</button>
+        <button class="tab" data-page="expenses">Expenses</button>
+        <button class="tab" data-page="accounts">Accounts</button>
+        <button class="tab" data-page="investments">Investments</button>
+        <button class="tab" data-page="budget">Budget</button>
+        <button class="tab" data-page="reports">Reports</button>
+        <button class="tab" data-page="settings">Settings</button>
+      </nav>
+      <div class="nav-right">
         <span id="data-status" class="status"></span>
         <button id="btn-lock" class="btn small hidden">🔒 Lock</button>
       </div>
     </header>
 
-    <nav class="tabs">
-      <button class="tab active" data-page="dashboard">Dashboard</button>
-      <button class="tab" data-page="income">Income</button>
-      <button class="tab" data-page="expenses">Expenses</button>
-      <button class="tab" data-page="accounts">Accounts</button>
-      <button class="tab" data-page="investments">Investments</button>
-      <button class="tab" data-page="budget">Budget</button>
-      <button class="tab" data-page="reports">Reports</button>
-      <button class="tab" data-page="settings">Settings</button>
-    </nav>
-
     <main>
 
       <!-- ===== Page 1: Dashboard ===== -->
-      <section id="page-dashboard" class="page active">
-        <h2 id="dashboard-greeting">Dashboard</h2>
-
+      <section id="page-dashboard" class="page active" style="--bg:url(img/trees-golden-hour.jpg)">
+        <div class="hero">
+          <p class="eyebrow" id="dashboard-greeting">Welcome</p>
+          <h1 class="headline">money <em>for</em> tomorrow</h1>
+          <p class="lede">Everything you earn, spend and grow — calm, clear and in one place.</p>
+        </div>
+        <div class="wrap">
         <div class="stat-grid">
           <div class="card stat">
             <span class="stat-label">Total Balance</span>
@@ -118,12 +126,17 @@
           </table>
           <p class="hint" id="recent-empty">No transactions yet.</p>
         </div>
+        </div>
       </section>
 
       <!-- ===== Page 2: Income ===== -->
-      <section id="page-income" class="page">
-        <h2>Income</h2>
-
+      <section id="page-income" class="page" style="--bg:url(img/leaves-shaped-like-stick-hanging-from-tree.jpg)">
+        <div class="hero short">
+          <p class="eyebrow">Money in</p>
+          <h1 class="headline">Income</h1>
+          <p class="lede">Track what comes in, one deposit at a time.</p>
+        </div>
+        <div class="wrap">
         <div class="card">
           <h3>Add One-Time Income</h3>
           <form id="income-form" class="form-grid">
@@ -186,12 +199,17 @@
           </table>
           <p class="hint" id="income-empty">No income recorded yet.</p>
         </div>
+        </div>
       </section>
 
       <!-- ===== Page 3: Expenses ===== -->
-      <section id="page-expenses" class="page">
-        <h2>Expenses</h2>
-
+      <section id="page-expenses" class="page" style="--bg:url(img/close-up-silhouette-plants.jpg)">
+        <div class="hero short">
+          <p class="eyebrow">Money out</p>
+          <h1 class="headline">Expenses</h1>
+          <p class="lede">See clearly where every rand goes.</p>
+        </div>
+        <div class="wrap">
         <div class="card">
           <h3>Add One-Time Expense</h3>
           <form id="expense-form" class="form-grid">
@@ -274,12 +292,17 @@
           </table>
           <p class="hint" id="expense-empty">No expenses recorded yet.</p>
         </div>
+        </div>
       </section>
 
       <!-- ===== Page 4: Accounts ===== -->
-      <section id="page-accounts" class="page">
-        <h2>Accounts</h2>
-
+      <section id="page-accounts" class="page" style="--bg:url(img/beautiful-hills.jpg)">
+        <div class="hero short">
+          <p class="eyebrow">Where it lives</p>
+          <h1 class="headline">Accounts</h1>
+          <p class="lede">Cheque, savings and credit — all in view.</p>
+        </div>
+        <div class="wrap">
         <div class="card">
           <h3 id="account-form-title">Add Account</h3>
           <form id="account-form" class="form-grid">
@@ -341,12 +364,17 @@
           </table>
           <p class="hint" id="accounts-empty">No accounts yet. Add your first account above.</p>
         </div>
+        </div>
       </section>
 
       <!-- ===== Investments ===== -->
-      <section id="page-investments" class="page">
-        <h2>Investments</h2>
-
+      <section id="page-investments" class="page" style="--bg:url(img/straw-with-clouds.jpg)">
+        <div class="hero short">
+          <p class="eyebrow">Growing</p>
+          <h1 class="headline">Invest <em>in</em> tomorrow</h1>
+          <p class="lede">Monthly contributions, grouped automatically.</p>
+        </div>
+        <div class="wrap">
         <div class="stat-grid">
           <div class="card stat">
             <span class="stat-label">Monthly Investing</span>
@@ -399,11 +427,17 @@
           </table>
           <p class="hint" id="investments-empty">No investments yet. Add your first one above.</p>
         </div>
+        </div>
       </section>
 
       <!-- ===== Budget planner ===== -->
-      <section id="page-budget" class="page">
-        <h2>Budget Planner</h2>
+      <section id="page-budget" class="page" style="--bg:url(img/closeup-two-small-common-mushrooms-forest-surrounded-by-greenery.jpg)">
+        <div class="hero short">
+          <p class="eyebrow">Plan ahead</p>
+          <h1 class="headline">Budget <em>planner</em></h1>
+          <p class="lede">Plan the month before it happens.</p>
+        </div>
+        <div class="wrap">
         <p class="hint">Add your planned monthly expenses to see whether you stay on track with your budget split. Untick an item to test a "what if" without deleting it.</p>
 
         <div class="card">
@@ -498,23 +532,26 @@
           </table>
           <p class="hint" id="plan-empty">No planned expenses yet.</p>
         </div>
+        </div>
       </section>
 
       <!-- ===== Page 5: Settings ===== -->
-      <section id="page-reports" class="page"></section>
-
-      <section id="page-settings" class="page">
-        <h2>Settings</h2>
-
-        <div class="card">
-          <h3>Appearance</h3>
-          <label class="inline-label">Theme
-            <select id="set-theme">
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-          </label>
+      <section id="page-reports" class="page" style="--bg:url(img/forest-covered-fog.jpg)">
+        <div class="hero short">
+          <p class="eyebrow">Insights</p>
+          <h1 class="headline">Reports</h1>
+          <p class="lede">Filter, review and export your history.</p>
         </div>
+        <div class="wrap" id="reports-body"></div>
+      </section>
+
+      <section id="page-settings" class="page" style="--bg:url(img/tree-beach-ocean-coastline-nature.jpg)">
+        <div class="hero short">
+          <p class="eyebrow">Make it yours</p>
+          <h1 class="headline">Settings</h1>
+          <p class="lede">Security and your data file.</p>
+        </div>
+        <div class="wrap">
 
         <div class="card" id="password-card">
           <h3>Password Lock</h3>
@@ -546,6 +583,7 @@
         <div class="card danger-zone">
           <h3>Danger Zone</h3>
           <button class="btn danger" id="btn-clear-all">Delete ALL data</button>
+        </div>
         </div>
       </section>
 
