@@ -265,10 +265,7 @@ function investmentAccountId(inv) {
 function syncInvestmentRecurring() {
   const total = data.investments
     .filter((i) => investmentStatus(i) === 'Active')
-    .reduce((sum, i) => {
-      const monthlyAmount = i.usePremiumGrowth ? (i.premiumMonthly || i.monthly) : i.monthly;
-      return sum + monthlyAmount;
-    }, 0);
+    .reduce((sum, i) => sum + i.monthly, 0);
   const idx = data.recurring.findIndex((r) => r.id === AUTO_INVESTMENT_REC_ID);
   if (!(total > 0)) {
     if (idx >= 0) data.recurring.splice(idx, 1);
@@ -287,8 +284,7 @@ function payInvestments() {
   const byAccount = new Map();
   data.investments.filter((i) => investmentStatus(i) === 'Active').forEach((i) => {
     const acc = investmentAccountId(i);
-    const monthlyAmount = i.usePremiumGrowth ? (i.premiumMonthly || i.monthly) : i.monthly;
-    byAccount.set(acc, (byAccount.get(acc) || 0) + monthlyAmount);
+    byAccount.set(acc, (byAccount.get(acc) || 0) + i.monthly);
   });
   byAccount.forEach((amount, acc) => {
     addTransaction('expense', amount, acc, 'Investments', today(), AUTO_INVESTMENT_REC_ID, 'investment');
@@ -443,11 +439,7 @@ function calculateInvestmentReturn(investment) {
     return { totalContributions: 0, expectedReturn: 0, finalValue: 0 };
   }
   
-  // Use premium monthly amount if enabled, otherwise use regular monthly
-  const monthlyAmount = investment.usePremiumGrowth 
-    ? (investment.premiumMonthly || investment.monthly) 
-    : investment.monthly;
-  
+  const monthlyAmount = investment.monthly;
   const totalContributions = monthlyAmount * months;
   
   // Use premium growth if enabled, otherwise use regular growth
@@ -505,7 +497,6 @@ async function handleInvestmentSubmit(e) {
     expectedGrowth: parseFloat($('#inv-growth').value) || 0,
     usePremiumGrowth: true,
     premiumGrowth: parseFloat($('#inv-premium-growth').value) || 0,
-    premiumMonthly: parseFloat($('#inv-premium-amount').value) || 0,
   };
   if (!fields.name || !fields.start) return;
   if (!requireAccount() || !fields.accountId) return;
@@ -532,7 +523,6 @@ function startEditInvestment(id) {
   $('#inv-start').value = inv.start;
   $('#inv-growth').value = inv.expectedGrowth || 0;
   $('#inv-premium-growth').value = inv.premiumGrowth || 0;
-  $('#inv-premium-amount').value = inv.premiumMonthly || 0;
   const months = termMonths(inv);
   $('#inv-years').value = Math.floor(months / 12);
   $('#inv-form-title').textContent = 'Edit Investment';
@@ -548,7 +538,6 @@ function resetInvestmentForm() {
   $('#inv-years').value = 5;
   $('#inv-growth').value = 0;
   $('#inv-premium-growth').value = 0;
-  $('#inv-premium-amount').value = 0;
   $('#inv-calculation').style.display = 'none';
   $('#inv-form-title').textContent = 'Add Investment';
   $('#inv-submit').textContent = 'Add Investment';
@@ -849,7 +838,6 @@ function bindEvents() {
     const monthly = parseFloat($('#inv-amount').value) || 0;
     const growth = parseFloat($('#inv-growth').value) || 0;
     const premiumGrowth = parseFloat($('#inv-premium-growth').value) || 0;
-    const premiumMonthly = parseFloat($('#inv-premium-amount').value) || 0;
     
     if (months > 0 && monthly > 0) {
       const mockInv = {
@@ -857,7 +845,6 @@ function bindEvents() {
         expectedGrowth: growth,
         usePremiumGrowth: true,
         premiumGrowth: premiumGrowth,
-        premiumMonthly: premiumMonthly,
         termMonths: months
       };
       const calc = calculateInvestmentReturn(mockInv);
@@ -870,7 +857,7 @@ function bindEvents() {
     }
   }
 
-  ['inv-amount', 'inv-years', 'inv-growth', 'inv-premium-growth', 'inv-premium-amount'].forEach((id) => {
+  ['inv-amount', 'inv-years', 'inv-growth', 'inv-premium-growth'].forEach((id) => {
     $(`#${id}`).addEventListener('change', updateInvestmentPreview);
     $(`#${id}`).addEventListener('input', updateInvestmentPreview);
   });
