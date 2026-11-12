@@ -119,6 +119,18 @@ h3 .hint { font-size: .75rem; margin: 0 0 0 6px; }
 .income { color: var(--income); }
 .expense { color: var(--expense); }
 
+.info-box {
+  background: linear-gradient(135deg, rgba(63, 208, 181, .15), rgba(26, 62, 110, .25));
+  border: 1px solid rgba(63, 208, 181, .3);
+  padding: 16px;
+  border-radius: var(--radius);
+}
+
+.info-box p {
+  margin: 6px 0;
+  font-size: 0.9rem;
+}
+
 /* ============ Forms ============ */
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px; align-items: end; }
 .span-2 { grid-column: span 2; }

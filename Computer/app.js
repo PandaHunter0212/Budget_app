@@ -433,12 +433,36 @@ function investmentStatus(inv) {
   return 'Active';
 }
 
+function calculateInvestmentReturn(investment) {
+  const months = termMonths(investment);
+  if (!months || investment.monthly <= 0) {
+    return { totalContributions: 0, expectedReturn: 0, finalValue: 0 };
+  }
+  
+  const totalContributions = investment.monthly * months;
+  const monthlyRate = (investment.expectedGrowth || 0) / 100 / 12;
+  
+  if (monthlyRate === 0) {
+    return { totalContributions, expectedReturn: 0, finalValue: totalContributions };
+  }
+  
+  let balance = 0;
+  for (let i = 0; i < months; i++) {
+    balance = balance * (1 + monthlyRate) + investment.monthly;
+  }
+  
+  const expectedReturn = Math.max(0, balance - totalContributions);
+  return { totalContributions, expectedReturn, finalValue: balance };
+}
+
 function renderInvestments() {
   const list = [...data.investments].sort((a, b) => a.start.localeCompare(b.start));
   const active = list.filter((i) => investmentStatus(i) === 'Active');
   $('#inv-stat-monthly').textContent = fmt(active.reduce((s, i) => s + i.monthly, 0));
   $('#inv-stat-active').textContent = active.length;
-  $('#investments-table').innerHTML = list.map((i) => `
+  $('#investments-table').innerHTML = list.map((i) => {
+    const calc = calculateInvestmentReturn(i);
+    return `
     <tr>
       <td>${esc(i.name)}</td>
       <td class="num">${fmt(i.monthly)}</td>
@@ -447,12 +471,15 @@ function renderInvestments() {
       <td>${termLabel(termMonths(i))}</td>
       <td>${esc(i.end || 'Ongoing')}</td>
       <td>${investmentStatus(i)}</td>
-      <td class="num">${termMonths(i) ? fmt(i.monthly * termMonths(i)) : '—'}</td>
+      <td class="num">${fmt(calc.totalContributions)}</td>
+      <td class="num" style="color: #059669;">${fmt(calc.expectedReturn)}</td>
+      <td class="num"><strong>${fmt(calc.finalValue)}</strong></td>
       <td>
         <button class="icon-btn" data-action="edit-inv" data-id="${i.id}" title="Edit">✏️</button>
         <button class="icon-btn" data-action="del-inv" data-id="${i.id}" title="Delete">🗑</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
   $('#investments-empty').classList.toggle('hidden', list.length > 0);
 }
 
@@ -463,6 +490,7 @@ async function handleInvestmentSubmit(e) {
     monthly: parseFloat($('#inv-amount').value) || 0,
     start: $('#inv-start').value,
     accountId: $('#inv-account').value,
+    expectedGrowth: parseFloat($('#inv-growth').value) || 0,
   };
   if (!fields.name || !fields.start) return;
   if (!requireAccount() || !fields.accountId) return;
@@ -487,6 +515,7 @@ function startEditInvestment(id) {
   $('#inv-amount').value = inv.monthly;
   $('#inv-account').value = investmentAccountId(inv);
   $('#inv-start').value = inv.start;
+  $('#inv-growth').value = inv.expectedGrowth || 0;
   const months = termMonths(inv);
   $('#inv-years').value = Math.floor(months / 12);
   $('#inv-months').value = months % 12;
@@ -502,6 +531,8 @@ function resetInvestmentForm() {
   $('#inv-start').value = today();
   $('#inv-years').value = 5;
   $('#inv-months').value = 0;
+  $('#inv-growth').value = 0;
+  $('#inv-calculation').style.display = 'none';
   $('#inv-form-title').textContent = 'Add Investment';
   $('#inv-submit').textContent = 'Add Investment';
   $('#inv-cancel').classList.add('hidden');
@@ -795,6 +826,28 @@ function bindEvents() {
 
   $('#investment-form').addEventListener('submit', handleInvestmentSubmit);
   $('#inv-cancel').addEventListener('click', resetInvestmentForm);
+
+  function updateInvestmentPreview() {
+    const months = (parseInt($('#inv-years').value, 10) || 0) * 12 + (parseInt($('#inv-months').value, 10) || 0);
+    const monthly = parseFloat($('#inv-amount').value) || 0;
+    const growth = parseFloat($('#inv-growth').value) || 0;
+    
+    if (months > 0 && monthly > 0) {
+      const mockInv = { monthly, expectedGrowth: growth, termMonths: months };
+      const calc = calculateInvestmentReturn(mockInv);
+      $('#inv-calc-contributions').textContent = fmt(calc.totalContributions);
+      $('#inv-calc-return').textContent = fmt(calc.expectedReturn);
+      $('#inv-calc-total').textContent = fmt(calc.finalValue);
+      $('#inv-calculation').style.display = 'block';
+    } else {
+      $('#inv-calculation').style.display = 'none';
+    }
+  }
+
+  ['inv-amount', 'inv-years', 'inv-months', 'inv-growth'].forEach((id) => {
+    $(`#${id}`).addEventListener('change', updateInvestmentPreview);
+    $(`#${id}`).addEventListener('input', updateInvestmentPreview);
+  });
 
   $('#split-form').addEventListener('submit', async (e) => {
     e.preventDefault();
