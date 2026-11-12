@@ -517,10 +517,7 @@ function renderInvestments() {
     return `
     <tr>
       <td>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          ${hasPremium ? `<span style="width: 1.5rem;"></span>` : '<span style="width: 1.5rem;"></span>'}
-          <span style="cursor: pointer; color: white; transition: color 0.2s ease;" onmouseover="this.style.color='#0066cc'" onmouseout="this.style.color='white'" onclick="openInvestmentBreakdown('${i.id}')" title="Click to view breakdown">${esc(i.name)}</span>
-        </div>
+        <span style="cursor: pointer; color: white; transition: color 0.2s ease;" data-action="view-inv" data-id="${i.id}" onmouseover="this.style.color='#0066cc'" onmouseout="this.style.color='white'" title="Click to view breakdown">${esc(i.name)}</span>
       </td>
       <td class="num">${fmt(i.monthly)}</td>
       <td>${esc(accountName(investmentAccountId(i)))}</td>
@@ -1149,6 +1146,8 @@ function bindEvents() {
       await commit();
     } else if (action === 'edit-inv') {
       startEditInvestment(id);
+    } else if (action === 'view-inv') {
+      openInvestmentBreakdown(id);
     } else if (action === 'del-inv') {
       const inv = data.investments.find((i) => i.id === id);
       if (!inv || !confirm(`Delete "${inv.name}"?`)) return;
