@@ -602,7 +602,6 @@ function closeInvestmentModal() {
 }
 
 function findInvestment(investmentId) {
-  const data = state.budgets[state.current];
   return data.investments.find((i) => i.id === investmentId);
 }
 
