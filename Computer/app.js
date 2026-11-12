@@ -459,6 +459,38 @@ function calculateInvestmentReturn(investment) {
   return { totalContributions, expectedReturn, finalValue: balance };
 }
 
+function generateYearlyBreakdown(investment) {
+  const months = termMonths(investment);
+  if (!months || investment.monthly <= 0) return [];
+  
+  const breakdown = [];
+  let currentDate = new Date(investment.start + 'T00:00:00Z');
+  let monthsProcessed = 0;
+  
+  for (let year = 1; monthsProcessed < months; year++) {
+    const monthsInYear = Math.min(12, months - monthsProcessed);
+    const monthlyAmount = investment.monthly;
+    const annualAmount = monthlyAmount * monthsInYear;
+    
+    const yearStart = currentDate.toISOString().slice(0, 10);
+    const yearEnd = new Date(currentDate.getTime() + monthsInYear * 30.44 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    
+    breakdown.push({
+      year,
+      monthsInYear,
+      monthlyAmount,
+      annualAmount,
+      yearStart,
+      yearEnd
+    });
+    
+    currentDate = new Date(currentDate.getTime() + monthsInYear * 30.44 * 24 * 60 * 60 * 1000);
+    monthsProcessed += monthsInYear;
+  }
+  
+  return breakdown;
+}
+
 function renderInvestments() {
   const list = [...data.investments].sort((a, b) => a.start.localeCompare(b.start));
   const active = list.filter((i) => investmentStatus(i) === 'Active');
@@ -466,9 +498,18 @@ function renderInvestments() {
   $('#inv-stat-active').textContent = active.length;
   $('#investments-table').innerHTML = list.map((i) => {
     const calc = calculateInvestmentReturn(i);
-    return `
+    const hasPremium = i.usePremiumGrowth && i.premiumGrowth > 0;
+    const expandId = `inv-expand-${i.id}`;
+    const dropdownId = `inv-dropdown-${i.id}`;
+    
+    let html = `
     <tr>
-      <td>${esc(i.name)}</td>
+      <td>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          ${hasPremium ? `<button class="icon-btn" style="padding: 0.25rem; font-size: 0.9rem;" onclick="toggleInvestmentBreakdown('${expandId}', '${dropdownId}')" title="Toggle breakdown">▼</button>` : '<span style="width: 1.5rem;"></span>'}
+          ${esc(i.name)}
+        </div>
+      </td>
       <td class="num">${fmt(i.monthly)}</td>
       <td>${esc(accountName(investmentAccountId(i)))}</td>
       <td>${esc(i.start)}</td>
@@ -483,8 +524,54 @@ function renderInvestments() {
         <button class="icon-btn" data-action="del-inv" data-id="${i.id}" title="Delete">🗑</button>
       </td>
     </tr>`;
+    
+    if (hasPremium) {
+      const breakdown = generateYearlyBreakdown(i);
+      html += `
+      <tr id="${expandId}" style="display: none;">
+        <td colspan="11" style="padding: 0; border: none;">
+          <div id="${dropdownId}" style="background: #f5f5f5; padding: 1rem; margin: 0.5rem 0;">
+            <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Annual/Monthly Contribution Breakdown:</p>
+            <div style="overflow-x: auto;">
+              <table style="font-size: 0.9rem; width: 100%;">
+                <thead>
+                  <tr style="border-bottom: 1px solid #ddd;">
+                    <th style="text-align: left; padding: 0.5rem 0;">Year</th>
+                    <th style="text-align: right; padding: 0.5rem 1rem;">Monthly</th>
+                    <th style="text-align: right; padding: 0.5rem 1rem;">Annual</th>
+                    <th style="text-align: left; padding: 0.5rem 1rem;">Period</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${breakdown.map((b) => `
+                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                      <td style="padding: 0.5rem 0;">Year ${b.year}</td>
+                      <td style="text-align: right; padding: 0.5rem 1rem;">${fmt(b.monthlyAmount)}</td>
+                      <td style="text-align: right; padding: 0.5rem 1rem;">${fmt(b.annualAmount)}</td>
+                      <td style="padding: 0.5rem 1rem; font-size: 0.85rem; color: #666;">${b.yearStart} to ${b.yearEnd}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+    }
+    
+    return html;
   }).join('');
   $('#investments-empty').classList.toggle('hidden', list.length > 0);
+}
+
+function toggleInvestmentBreakdown(expandId, dropdownId) {
+  const expandRow = $(expandId);
+  const dropdownDiv = $(dropdownId);
+  
+  if (expandRow && dropdownDiv) {
+    const isHidden = expandRow.style.display === 'none';
+    expandRow.style.display = isHidden ? 'table-row' : 'none';
+  }
 }
 
 async function handleInvestmentSubmit(e) {

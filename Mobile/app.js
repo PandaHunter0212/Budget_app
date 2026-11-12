@@ -534,6 +534,16 @@ function renderInvestments() {
   $('#investments-empty').classList.toggle('hidden', list.length > 0);
 }
 
+function toggleInvestmentBreakdown(expandId, dropdownId) {
+  const expandRow = $(expandId);
+  const dropdownDiv = $(dropdownId);
+  
+  if (expandRow && dropdownDiv) {
+    const isHidden = expandRow.style.display === 'none';
+    expandRow.style.display = isHidden ? 'table-row' : 'none';
+  }
+}
+
 async function handleInvestmentSubmit(e) {
   e.preventDefault();
   const fields = {
