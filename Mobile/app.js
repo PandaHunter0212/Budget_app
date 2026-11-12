@@ -491,22 +491,30 @@ function calculateInvestmentReturn(investment) {
   // If using premium growth, monthly payment increases each year
   if (investment.usePremiumGrowth && investment.premiumGrowth > 0) {
     const premiumGrowthRate = investment.premiumGrowth / 100;
+    const growthRate = investment.expectedGrowth || 0;
+    const monthlyRate = growthRate / 100 / 12;
+    
     let totalContributions = 0;
+    let balance = 0;
     let currentMonthlyAmount = initialMonthlyAmount;
     let monthsProcessed = 0;
     
     while (monthsProcessed < months) {
       const monthsInYear = Math.min(12, months - monthsProcessed);
-      const yearContribution = currentMonthlyAmount * monthsInYear;
-      totalContributions += yearContribution;
+      
+      for (let i = 0; i < monthsInYear; i++) {
+        balance = balance * (1 + monthlyRate) + currentMonthlyAmount;
+        totalContributions += currentMonthlyAmount;
+      }
       
       // Increase monthly amount for next year
       currentMonthlyAmount = currentMonthlyAmount * (1 + premiumGrowthRate);
       monthsProcessed += monthsInYear;
     }
     
-    // For premium growth, final value = total contributions (no investment returns)
-    return { totalContributions, expectedReturn: 0, finalValue: totalContributions };
+    // For premium growth with expected growth rate applied
+    const expectedReturn = Math.max(0, balance - totalContributions);
+    return { totalContributions, expectedReturn, finalValue: balance };
   } else {
     // Regular calculation with expected growth rate
     const monthlyAmount = initialMonthlyAmount;
