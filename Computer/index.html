@@ -598,6 +598,20 @@
       </section>
 
     </main>
+
+    <!-- Investment Breakdown Modal -->
+    <div id="investment-breakdown-modal" class="overlay hidden">
+      <div class="overlay-card" style="max-width: 600px; text-align: left;">
+        <h2 id="investment-modal-title" style="margin-top: 0; text-align: center; font-size: 1.8rem;">Investment Breakdown</h2>
+        <div id="investment-modal-content" style="overflow-y: auto; max-height: 70vh;">
+          <!-- Content will be populated by JavaScript -->
+        </div>
+        <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1.5rem;">
+          <button class="btn" onclick="closeInvestmentModal()">Close</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script src="app.js"></script>

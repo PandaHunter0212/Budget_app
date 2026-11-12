@@ -506,8 +506,8 @@ function renderInvestments() {
     <tr>
       <td>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-          ${hasPremium ? `<button class="icon-btn" style="padding: 0.25rem; font-size: 0.9rem;" onclick="toggleInvestmentBreakdown('${expandId}', '${dropdownId}')" title="Toggle breakdown">▼</button>` : '<span style="width: 1.5rem;"></span>'}
-          ${esc(i.name)}
+          ${hasPremium ? `<button class="icon-btn" style="padding: 0.25rem; font-size: 0.9rem; cursor: pointer; color: #0066cc;" onclick="openInvestmentBreakdown('${i.id}')" title="View breakdown">📋</button>` : '<span style="width: 1.5rem;"></span>'}
+          <span style="cursor: pointer; color: #0066cc; text-decoration: underline;" onclick="openInvestmentBreakdown('${i.id}')" title="Click to view breakdown">${esc(i.name)}</span>
         </div>
       </td>
       <td class="num">${fmt(i.monthly)}</td>
@@ -525,53 +525,72 @@ function renderInvestments() {
       </td>
     </tr>`;
     
-    if (hasPremium) {
-      const breakdown = generateYearlyBreakdown(i);
-      html += `
-      <tr id="${expandId}" style="display: none;">
-        <td colspan="11" style="padding: 0; border: none;">
-          <div id="${dropdownId}" style="background: #f5f5f5; padding: 1rem; margin: 0.5rem 0;">
-            <p style="margin: 0 0 0.75rem 0; font-weight: 600;">Annual/Monthly Contribution Breakdown:</p>
-            <div style="overflow-x: auto;">
-              <table style="font-size: 0.9rem; width: 100%;">
-                <thead>
-                  <tr style="border-bottom: 1px solid #ddd;">
-                    <th style="text-align: left; padding: 0.5rem 0;">Year</th>
-                    <th style="text-align: right; padding: 0.5rem 1rem;">Monthly</th>
-                    <th style="text-align: right; padding: 0.5rem 1rem;">Annual</th>
-                    <th style="text-align: left; padding: 0.5rem 1rem;">Period</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${breakdown.map((b) => `
-                    <tr style="border-bottom: 1px solid #f0f0f0;">
-                      <td style="padding: 0.5rem 0;">Year ${b.year}</td>
-                      <td style="text-align: right; padding: 0.5rem 1rem;">${fmt(b.monthlyAmount)}</td>
-                      <td style="text-align: right; padding: 0.5rem 1rem;">${fmt(b.annualAmount)}</td>
-                      <td style="padding: 0.5rem 1rem; font-size: 0.85rem; color: #666;">${b.yearStart} to ${b.yearEnd}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </td>
-      </tr>`;
-    }
-    
     return html;
   }).join('');
   $('#investments-empty').classList.toggle('hidden', list.length > 0);
 }
 
-function toggleInvestmentBreakdown(expandId, dropdownId) {
-  const expandRow = $(expandId);
-  const dropdownDiv = $(dropdownId);
+function openInvestmentBreakdown(investmentId) {
+  const investment = findInvestment(investmentId);
+  if (!investment) return;
   
-  if (expandRow && dropdownDiv) {
-    const isHidden = expandRow.style.display === 'none';
-    expandRow.style.display = isHidden ? 'table-row' : 'none';
+  const hasPremium = investment.usePremiumGrowth && investment.premiumGrowth > 0;
+  const breakdown = generateYearlyBreakdown(investment);
+  
+  let content = `
+    <div style="padding: 1rem 0;">
+      <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.95rem;">
+        <strong>Monthly Amount:</strong> ${fmt(investment.monthly)}
+      </p>
+      <p style="margin: 0 0 1rem 0; color: #666; font-size: 0.95rem;">
+        <strong>Start Date:</strong> ${investment.start}
+      </p>
+  `;
+  
+  if (hasPremium && breakdown.length > 0) {
+    content += `
+      <p style="margin: 0 0 0.75rem 0; font-weight: 600; font-size: 1rem;">Yearly Contribution Breakdown:</p>
+      <div style="overflow-x: auto;">
+        <table style="font-size: 0.9rem; width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid #ddd; background: #f9f9f9;">
+              <th style="text-align: left; padding: 0.75rem; font-weight: 600;">Year</th>
+              <th style="text-align: right; padding: 0.75rem; font-weight: 600;">Monthly (R)</th>
+              <th style="text-align: right; padding: 0.75rem; font-weight: 600;">Annual (R)</th>
+              <th style="text-align: left; padding: 0.75rem; font-weight: 600;">Period</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${breakdown.map((b, idx) => `
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 0.75rem; font-weight: 500;">Year ${b.year}</td>
+                <td style="text-align: right; padding: 0.75rem;">${fmt(b.monthlyAmount)}</td>
+                <td style="text-align: right; padding: 0.75rem; font-weight: 600; color: #059669;">${fmt(b.annualAmount)}</td>
+                <td style="padding: 0.75rem; font-size: 0.85rem; color: #666;">${b.yearStart} to ${b.yearEnd}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } else {
+    content += `<p style="color: #666; font-size: 0.95rem;">No premium growth rate configured for this investment.</p>`;
   }
+  
+  content += `</div>`;
+  
+  $('#investment-modal-title').textContent = esc(investment.name);
+  $('#investment-modal-content').innerHTML = content;
+  $('#investment-breakdown-modal').classList.remove('hidden');
+}
+
+function closeInvestmentModal() {
+  $('#investment-breakdown-modal').classList.add('hidden');
+}
+
+function findInvestment(investmentId) {
+  const data = state.budgets[state.current];
+  return data.investments.find((i) => i.id === investmentId);
 }
 
 async function handleInvestmentSubmit(e) {
