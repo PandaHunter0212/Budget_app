@@ -624,7 +624,6 @@ function closeInvestmentModal() {
 function findInvestment(investmentId) {
   return data.investments.find((i) => i.id === investmentId);
 }
-}
 
 async function handleInvestmentSubmit(e) {
   e.preventDefault();
