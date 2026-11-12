@@ -518,8 +518,8 @@ function renderInvestments() {
     <tr>
       <td>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-          ${hasPremium ? `<button class="icon-btn" style="padding: 0.25rem; font-size: 0.9rem; cursor: pointer; color: #0066cc;" onclick="openInvestmentBreakdown('${i.id}')" title="View breakdown">📋</button>` : '<span style="width: 1.5rem;"></span>'}
-          <span style="cursor: pointer; color: #0066cc; text-decoration: underline;" onclick="openInvestmentBreakdown('${i.id}')" title="Click to view breakdown">${esc(i.name)}</span>
+          ${hasPremium ? `<span style="width: 1.5rem;"></span>` : '<span style="width: 1.5rem;"></span>'}
+          <span style="cursor: pointer; color: white; transition: color 0.2s ease;" onmouseover="this.style.color='#0066cc'" onmouseout="this.style.color='white'" onclick="openInvestmentBreakdown('${i.id}')" title="Click to view breakdown">${esc(i.name)}</span>
         </div>
       </td>
       <td class="num">${fmt(i.monthly)}</td>
@@ -551,8 +551,14 @@ function toggleInvestmentBreakdown(expandId, dropdownId) {
 }
 
 function openInvestmentBreakdown(investmentId) {
+  console.log('Opening investment breakdown for ID:', investmentId);
   const investment = findInvestment(investmentId);
-  if (!investment) return;
+  console.log('Found investment:', investment);
+  
+  if (!investment) {
+    console.error('Investment not found with ID:', investmentId);
+    return;
+  }
   
   const hasPremium = investment.usePremiumGrowth && investment.premiumGrowth > 0;
   const breakdown = generateYearlyBreakdown(investment);
@@ -599,9 +605,19 @@ function openInvestmentBreakdown(investmentId) {
   
   content += `</div>`;
   
-  $('#investment-modal-title').textContent = esc(investment.name);
-  $('#investment-modal-content').innerHTML = content;
-  $('#investment-breakdown-modal').classList.remove('hidden');
+  const titleEl = $('#investment-modal-title');
+  const contentEl = $('#investment-modal-content');
+  const modalEl = $('#investment-breakdown-modal');
+  
+  if (!titleEl || !contentEl || !modalEl) {
+    console.error('Modal elements not found in DOM');
+    return;
+  }
+  
+  titleEl.textContent = esc(investment.name);
+  contentEl.innerHTML = content;
+  modalEl.classList.remove('hidden');
+  console.log('Modal opened successfully');
 }
 
 function closeInvestmentModal() {
