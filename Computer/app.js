@@ -439,24 +439,46 @@ function calculateInvestmentReturn(investment) {
     return { totalContributions: 0, expectedReturn: 0, finalValue: 0 };
   }
   
-  const monthlyAmount = investment.monthly;
-  const totalContributions = monthlyAmount * months;
+  const initialMonthlyAmount = investment.monthly;
   
-  // Use premium growth if enabled, otherwise use regular growth
-  const growthRate = investment.usePremiumGrowth ? (investment.premiumGrowth || 0) : (investment.expectedGrowth || 0);
-  const monthlyRate = growthRate / 100 / 12;
-  
-  if (monthlyRate === 0) {
+  // If using premium growth, monthly payment increases each year
+  if (investment.usePremiumGrowth && investment.premiumGrowth > 0) {
+    const premiumGrowthRate = investment.premiumGrowth / 100;
+    let totalContributions = 0;
+    let currentMonthlyAmount = initialMonthlyAmount;
+    let monthsProcessed = 0;
+    
+    while (monthsProcessed < months) {
+      const monthsInYear = Math.min(12, months - monthsProcessed);
+      const yearContribution = currentMonthlyAmount * monthsInYear;
+      totalContributions += yearContribution;
+      
+      // Increase monthly amount for next year
+      currentMonthlyAmount = currentMonthlyAmount * (1 + premiumGrowthRate);
+      monthsProcessed += monthsInYear;
+    }
+    
+    // For premium growth, final value = total contributions (no investment returns)
     return { totalContributions, expectedReturn: 0, finalValue: totalContributions };
+  } else {
+    // Regular calculation with expected growth rate
+    const monthlyAmount = initialMonthlyAmount;
+    const totalContributions = monthlyAmount * months;
+    const growthRate = investment.expectedGrowth || 0;
+    const monthlyRate = growthRate / 100 / 12;
+    
+    if (monthlyRate === 0) {
+      return { totalContributions, expectedReturn: 0, finalValue: totalContributions };
+    }
+    
+    let balance = 0;
+    for (let i = 0; i < months; i++) {
+      balance = balance * (1 + monthlyRate) + monthlyAmount;
+    }
+    
+    const expectedReturn = Math.max(0, balance - totalContributions);
+    return { totalContributions, expectedReturn, finalValue: balance };
   }
-  
-  let balance = 0;
-  for (let i = 0; i < months; i++) {
-    balance = balance * (1 + monthlyRate) + monthlyAmount;
-  }
-  
-  const expectedReturn = Math.max(0, balance - totalContributions);
-  return { totalContributions, expectedReturn, finalValue: balance };
 }
 
 function generateYearlyBreakdown(investment) {
@@ -467,25 +489,54 @@ function generateYearlyBreakdown(investment) {
   let currentDate = new Date(investment.start + 'T00:00:00Z');
   let monthsProcessed = 0;
   
-  for (let year = 1; monthsProcessed < months; year++) {
-    const monthsInYear = Math.min(12, months - monthsProcessed);
-    const monthlyAmount = investment.monthly;
-    const annualAmount = monthlyAmount * monthsInYear;
+  // If using premium growth, calculate increasing monthly payments
+  if (investment.usePremiumGrowth && investment.premiumGrowth > 0) {
+    const premiumGrowthRate = investment.premiumGrowth / 100;
+    let currentMonthlyAmount = investment.monthly;
     
-    const yearStart = currentDate.toISOString().slice(0, 10);
-    const yearEnd = new Date(currentDate.getTime() + monthsInYear * 30.44 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    
-    breakdown.push({
-      year,
-      monthsInYear,
-      monthlyAmount,
-      annualAmount,
-      yearStart,
-      yearEnd
-    });
-    
-    currentDate = new Date(currentDate.getTime() + monthsInYear * 30.44 * 24 * 60 * 60 * 1000);
-    monthsProcessed += monthsInYear;
+    for (let year = 1; monthsProcessed < months; year++) {
+      const monthsInYear = Math.min(12, months - monthsProcessed);
+      const annualAmount = currentMonthlyAmount * monthsInYear;
+      
+      const yearStart = currentDate.toISOString().slice(0, 10);
+      const yearEnd = new Date(currentDate.getTime() + monthsInYear * 30.44 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      
+      breakdown.push({
+        year,
+        monthsInYear,
+        monthlyAmount: currentMonthlyAmount,
+        annualAmount,
+        yearStart,
+        yearEnd
+      });
+      
+      // Increase monthly amount for next year
+      currentMonthlyAmount = currentMonthlyAmount * (1 + premiumGrowthRate);
+      currentDate = new Date(currentDate.getTime() + monthsInYear * 30.44 * 24 * 60 * 60 * 1000);
+      monthsProcessed += monthsInYear;
+    }
+  } else {
+    // Regular calculation - same monthly amount every year
+    for (let year = 1; monthsProcessed < months; year++) {
+      const monthsInYear = Math.min(12, months - monthsProcessed);
+      const monthlyAmount = investment.monthly;
+      const annualAmount = monthlyAmount * monthsInYear;
+      
+      const yearStart = currentDate.toISOString().slice(0, 10);
+      const yearEnd = new Date(currentDate.getTime() + monthsInYear * 30.44 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      
+      breakdown.push({
+        year,
+        monthsInYear,
+        monthlyAmount,
+        annualAmount,
+        yearStart,
+        yearEnd
+      });
+      
+      currentDate = new Date(currentDate.getTime() + monthsInYear * 30.44 * 24 * 60 * 60 * 1000);
+      monthsProcessed += monthsInYear;
+    }
   }
   
   return breakdown;
