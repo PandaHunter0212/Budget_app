@@ -405,20 +405,13 @@
             <label>Term (Years)
               <input type="number" id="inv-years" min="0" step="1" value="5" required>
             </label>
-            <label>Term (Extra Months)
-              <input type="number" id="inv-months" min="0" max="11" step="1" value="0" required>
-            </label>
             <label>Expected Annual Growth Rate (%)
               <input type="number" id="inv-growth" step="0.01" min="0" value="0" placeholder="e.g. 7.5" required>
             </label>
-            <label style="grid-column: 1 / -1; display: flex; align-items: center; gap: 0.5rem;">
-              <input type="checkbox" id="inv-use-premium" style="width: auto; cursor: pointer;">
-              Use Premium Growth Rate
-            </label>
-            <label id="inv-premium-label" style="display: none;">Premium Annual Growth Rate (%)
+            <label>Premium Annual Growth Rate (%)
               <input type="number" id="inv-premium-growth" step="0.01" min="0" value="0" placeholder="e.g. 10" required>
             </label>
-            <label id="inv-premium-amount-label" style="display: none;">Premium Monthly Amount (R)
+            <label>Premium Monthly Amount (R)
               <input type="number" id="inv-premium-amount" step="0.01" min="0" placeholder="0.00" required>
             </label>
             <div class="form-actions">

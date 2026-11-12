@@ -544,20 +544,19 @@ function renderInvestments() {
 
 async function handleInvestmentSubmit(e) {
   e.preventDefault();
-  const usePremium = $('#inv-use-premium').checked;
   const fields = {
     name: $('#inv-name').value.trim(),
     monthly: parseFloat($('#inv-amount').value) || 0,
     start: $('#inv-start').value,
     accountId: $('#inv-account').value,
     expectedGrowth: parseFloat($('#inv-growth').value) || 0,
-    usePremiumGrowth: usePremium,
-    premiumGrowth: usePremium ? parseFloat($('#inv-premium-growth').value) || 0 : 0,
-    premiumMonthly: usePremium ? parseFloat($('#inv-premium-amount').value) || 0 : 0,
+    usePremiumGrowth: true,
+    premiumGrowth: parseFloat($('#inv-premium-growth').value) || 0,
+    premiumMonthly: parseFloat($('#inv-premium-amount').value) || 0,
   };
   if (!fields.name || !fields.start) return;
   if (!requireAccount() || !fields.accountId) return;
-  fields.termMonths = (parseInt($('#inv-years').value, 10) || 0) * 12 + (parseInt($('#inv-months').value, 10) || 0);
+  fields.termMonths = (parseInt($('#inv-years').value, 10) || 0) * 12;
   if (fields.termMonths <= 0) return alert('Please enter a term of at least 1 month.');
   fields.end = addMonths(fields.start, fields.termMonths);
   if (editingInvestmentId) {
@@ -579,14 +578,10 @@ function startEditInvestment(id) {
   $('#inv-account').value = investmentAccountId(inv);
   $('#inv-start').value = inv.start;
   $('#inv-growth').value = inv.expectedGrowth || 0;
-  $('#inv-use-premium').checked = inv.usePremiumGrowth || false;
   $('#inv-premium-growth').value = inv.premiumGrowth || 0;
   $('#inv-premium-amount').value = inv.premiumMonthly || 0;
-  $('#inv-premium-label').style.display = inv.usePremiumGrowth ? '' : 'none';
-  $('#inv-premium-amount-label').style.display = inv.usePremiumGrowth ? '' : 'none';
   const months = termMonths(inv);
   $('#inv-years').value = Math.floor(months / 12);
-  $('#inv-months').value = months % 12;
   $('#inv-form-title').textContent = 'Edit Investment';
   $('#inv-submit').textContent = 'Save Changes';
   $('#inv-cancel').classList.remove('hidden');
@@ -598,13 +593,9 @@ function resetInvestmentForm() {
   $('#investment-form').reset();
   $('#inv-start').value = today();
   $('#inv-years').value = 5;
-  $('#inv-months').value = 0;
   $('#inv-growth').value = 0;
-  $('#inv-use-premium').checked = false;
   $('#inv-premium-growth').value = 0;
   $('#inv-premium-amount').value = 0;
-  $('#inv-premium-label').style.display = 'none';
-  $('#inv-premium-amount-label').style.display = 'none';
   $('#inv-form-title').textContent = 'Add Investment';
   $('#inv-submit').textContent = 'Add Investment';
   $('#inv-cancel').classList.add('hidden');
@@ -913,10 +904,9 @@ function bindEvents() {
 
   // Update investment calculation preview
   function updateInvestmentPreview() {
-    const months = (parseInt($('#inv-years').value, 10) || 0) * 12 + (parseInt($('#inv-months').value, 10) || 0);
+    const months = (parseInt($('#inv-years').value, 10) || 0) * 12;
     const monthly = parseFloat($('#inv-amount').value) || 0;
     const growth = parseFloat($('#inv-growth').value) || 0;
-    const usePremium = $('#inv-use-premium').checked;
     const premiumGrowth = parseFloat($('#inv-premium-growth').value) || 0;
     const premiumMonthly = parseFloat($('#inv-premium-amount').value) || 0;
     
@@ -924,7 +914,7 @@ function bindEvents() {
       const mockInv = {
         monthly,
         expectedGrowth: growth,
-        usePremiumGrowth: usePremium,
+        usePremiumGrowth: true,
         premiumGrowth: premiumGrowth,
         premiumMonthly: premiumMonthly,
         termMonths: months
@@ -939,13 +929,7 @@ function bindEvents() {
     }
   }
 
-  $('#inv-use-premium').addEventListener('change', (e) => {
-    $('#inv-premium-label').style.display = e.target.checked ? '' : 'none';
-    $('#inv-premium-amount-label').style.display = e.target.checked ? '' : 'none';
-    updateInvestmentPreview();
-  });
-
-  ['inv-amount', 'inv-years', 'inv-months', 'inv-growth', 'inv-premium-growth', 'inv-premium-amount'].forEach((id) => {
+  ['inv-amount', 'inv-years', 'inv-growth', 'inv-premium-growth', 'inv-premium-amount'].forEach((id) => {
     $(`#${id}`).addEventListener('change', updateInvestmentPreview);
     $(`#${id}`).addEventListener('input', updateInvestmentPreview);
   });
