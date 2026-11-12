@@ -710,14 +710,15 @@ function findInvestment(investmentId) {
 
 async function handleInvestmentSubmit(e) {
   e.preventDefault();
+  const premiumGrowth = parseFloat($('#inv-premium-growth').value) || 0;
   const fields = {
     name: $('#inv-name').value.trim(),
     monthly: parseFloat($('#inv-amount').value) || 0,
     start: $('#inv-start').value,
     accountId: $('#inv-account').value,
     expectedGrowth: parseFloat($('#inv-growth').value) || 0,
-    usePremiumGrowth: true,
-    premiumGrowth: parseFloat($('#inv-premium-growth').value) || 0,
+    usePremiumGrowth: premiumGrowth > 0,
+    premiumGrowth: premiumGrowth,
   };
   if (!fields.name || !fields.start) return;
   if (!requireAccount() || !fields.accountId) return;
@@ -1076,7 +1077,7 @@ function bindEvents() {
       const mockInv = {
         monthly,
         expectedGrowth: growth,
-        usePremiumGrowth: true,
+        usePremiumGrowth: premiumGrowth > 0,
         premiumGrowth: premiumGrowth,
         termMonths: months
       };
