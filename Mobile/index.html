@@ -417,11 +417,20 @@
             <label>Term (Extra Months)
               <input type="number" id="inv-months" min="0" max="11" step="1" value="0" required>
             </label>
+            <label>Expected Annual Growth Rate (%)
+              <input type="number" id="inv-growth" step="0.01" min="0" value="0" placeholder="e.g. 7.5" required>
+            </label>
             <div class="form-actions">
               <button type="submit" class="btn primary" id="inv-submit">Add Investment</button>
               <button type="button" class="btn hidden" id="inv-cancel">Cancel</button>
             </div>
           </form>
+          <div class="card info-box" id="inv-calculation" style="display: none; margin-top: 1rem;">
+            <p><strong>Calculation Preview:</strong></p>
+            <p>Total contributions: <span id="inv-calc-contributions">R 0.00</span></p>
+            <p>Expected return: <span id="inv-calc-return">R 0.00</span></p>
+            <p><strong>Expected final value: <span id="inv-calc-total">R 0.00</span></strong></p>
+          </div>
         </div>
 
         <div class="card">
@@ -430,7 +439,7 @@
             <thead>
               <tr>
                 <th>Name</th><th class="num">Per Month</th><th>Account</th><th>Start</th><th>Term</th><th>Expected End</th>
-                <th>Status</th><th class="num">Total Planned</th><th></th>
+                <th>Status</th><th class="num">Total Planned</th><th class="num">Expected Return</th><th class="num">Final Value</th><th></th>
               </tr>
             </thead>
             <tbody id="investments-table"></tbody>

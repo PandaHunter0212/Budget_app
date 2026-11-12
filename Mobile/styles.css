@@ -1,4 +1,4 @@
-/* ============ Finance Manager — immersive photo look ============ */
+/* ============ Finance Manager — immersive photo ============ */
 :root {
   --navy: #0d1b2e;
   --navy-2: #13263f;
@@ -118,6 +118,18 @@ h3 .hint { font-size: .75rem; margin: 0 0 0 6px; }
 .stat-grid .stat:first-child { background: linear-gradient(135deg, rgba(63, 208, 181, .3), rgba(26, 62, 110, .45)); border-color: rgba(63, 208, 181, .4); }
 .income { color: var(--income); }
 .expense { color: var(--expense); }
+
+.info-box {
+  background: linear-gradient(135deg, rgba(63, 208, 181, .15), rgba(26, 62, 110, .25));
+  border: 1px solid rgba(63, 208, 181, .3);
+  padding: 16px;
+  border-radius: var(--radius);
+}
+
+.info-box p {
+  margin: 6px 0;
+  font-size: 0.9rem;
+}
 
 /* ============ Forms ============ */
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px; align-items: end; }
