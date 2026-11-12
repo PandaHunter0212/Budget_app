@@ -552,22 +552,22 @@ function openInvestmentBreakdown(investmentId) {
   
   if (hasPremium && breakdown.length > 0) {
     content += `
-      <p style="margin: 0 0 0.75rem 0; font-weight: 600; font-size: 1rem;">Yearly Contribution Breakdown:</p>
+      <p style="margin: 0 0 0.75rem 0; font-weight: 600; font-size: 1rem; color: #1a1a1a;">Yearly Contribution Breakdown:</p>
       <div style="overflow-x: auto;">
-        <table style="font-size: 0.9rem; width: 100%; border-collapse: collapse;">
+        <table style="font-size: 0.9rem; width: 100%; border-collapse: collapse; color: #333;">
           <thead>
-            <tr style="border-bottom: 2px solid #ddd; background: #f9f9f9;">
-              <th style="text-align: left; padding: 0.75rem; font-weight: 600;">Year</th>
-              <th style="text-align: right; padding: 0.75rem; font-weight: 600;">Monthly (R)</th>
-              <th style="text-align: right; padding: 0.75rem; font-weight: 600;">Annual (R)</th>
-              <th style="text-align: left; padding: 0.75rem; font-weight: 600;">Period</th>
+            <tr style="border-bottom: 2px solid #ddd; background: #f0f0f0;">
+              <th style="text-align: left; padding: 0.75rem; font-weight: 600; color: #1a1a1a;">Year</th>
+              <th style="text-align: right; padding: 0.75rem; font-weight: 600; color: #1a1a1a;">Monthly (R)</th>
+              <th style="text-align: right; padding: 0.75rem; font-weight: 600; color: #1a1a1a;">Annual (R)</th>
+              <th style="text-align: left; padding: 0.75rem; font-weight: 600; color: #1a1a1a;">Period</th>
             </tr>
           </thead>
           <tbody>
             ${breakdown.map((b, idx) => `
               <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 0.75rem; font-weight: 500;">Year ${b.year}</td>
-                <td style="text-align: right; padding: 0.75rem;">${fmt(b.monthlyAmount)}</td>
+                <td style="padding: 0.75rem; font-weight: 500; color: #333;">Year ${b.year}</td>
+                <td style="text-align: right; padding: 0.75rem; color: #333;">${fmt(b.monthlyAmount)}</td>
                 <td style="text-align: right; padding: 0.75rem; font-weight: 600; color: #059669;">${fmt(b.annualAmount)}</td>
                 <td style="padding: 0.75rem; font-size: 0.85rem; color: #666;">${b.yearStart} to ${b.yearEnd}</td>
               </tr>
