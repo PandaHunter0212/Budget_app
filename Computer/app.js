@@ -265,7 +265,10 @@ function investmentAccountId(inv) {
 function syncInvestmentRecurring() {
   const total = data.investments
     .filter((i) => investmentStatus(i) === 'Active')
-    .reduce((sum, i) => sum + i.monthly, 0);
+    .reduce((sum, i) => {
+      const monthlyAmount = i.usePremiumGrowth ? (i.premiumMonthly || i.monthly) : i.monthly;
+      return sum + monthlyAmount;
+    }, 0);
   const idx = data.recurring.findIndex((r) => r.id === AUTO_INVESTMENT_REC_ID);
   if (!(total > 0)) {
     if (idx >= 0) data.recurring.splice(idx, 1);
@@ -284,7 +287,8 @@ function payInvestments() {
   const byAccount = new Map();
   data.investments.filter((i) => investmentStatus(i) === 'Active').forEach((i) => {
     const acc = investmentAccountId(i);
-    byAccount.set(acc, (byAccount.get(acc) || 0) + i.monthly);
+    const monthlyAmount = i.usePremiumGrowth ? (i.premiumMonthly || i.monthly) : i.monthly;
+    byAccount.set(acc, (byAccount.get(acc) || 0) + monthlyAmount);
   });
   byAccount.forEach((amount, acc) => {
     addTransaction('expense', amount, acc, 'Investments', today(), AUTO_INVESTMENT_REC_ID, 'investment');
@@ -439,8 +443,16 @@ function calculateInvestmentReturn(investment) {
     return { totalContributions: 0, expectedReturn: 0, finalValue: 0 };
   }
   
-  const totalContributions = investment.monthly * months;
-  const monthlyRate = (investment.expectedGrowth || 0) / 100 / 12;
+  // Use premium monthly amount if enabled, otherwise use regular monthly
+  const monthlyAmount = investment.usePremiumGrowth 
+    ? (investment.premiumMonthly || investment.monthly) 
+    : investment.monthly;
+  
+  const totalContributions = monthlyAmount * months;
+  
+  // Use premium growth if enabled, otherwise use regular growth
+  const growthRate = investment.usePremiumGrowth ? (investment.premiumGrowth || 0) : (investment.expectedGrowth || 0);
+  const monthlyRate = growthRate / 100 / 12;
   
   if (monthlyRate === 0) {
     return { totalContributions, expectedReturn: 0, finalValue: totalContributions };
@@ -448,7 +460,7 @@ function calculateInvestmentReturn(investment) {
   
   let balance = 0;
   for (let i = 0; i < months; i++) {
-    balance = balance * (1 + monthlyRate) + investment.monthly;
+    balance = balance * (1 + monthlyRate) + monthlyAmount;
   }
   
   const expectedReturn = Math.max(0, balance - totalContributions);
@@ -485,12 +497,16 @@ function renderInvestments() {
 
 async function handleInvestmentSubmit(e) {
   e.preventDefault();
+  const usePremium = $('#inv-use-premium').checked;
   const fields = {
     name: $('#inv-name').value.trim(),
     monthly: parseFloat($('#inv-amount').value) || 0,
     start: $('#inv-start').value,
     accountId: $('#inv-account').value,
     expectedGrowth: parseFloat($('#inv-growth').value) || 0,
+    usePremiumGrowth: usePremium,
+    premiumGrowth: usePremium ? parseFloat($('#inv-premium-growth').value) || 0 : 0,
+    premiumMonthly: usePremium ? parseFloat($('#inv-premium-amount').value) || 0 : 0,
   };
   if (!fields.name || !fields.start) return;
   if (!requireAccount() || !fields.accountId) return;
@@ -516,6 +532,11 @@ function startEditInvestment(id) {
   $('#inv-account').value = investmentAccountId(inv);
   $('#inv-start').value = inv.start;
   $('#inv-growth').value = inv.expectedGrowth || 0;
+  $('#inv-use-premium').checked = inv.usePremiumGrowth || false;
+  $('#inv-premium-growth').value = inv.premiumGrowth || 0;
+  $('#inv-premium-amount').value = inv.premiumMonthly || 0;
+  $('#inv-premium-label').style.display = inv.usePremiumGrowth ? '' : 'none';
+  $('#inv-premium-amount-label').style.display = inv.usePremiumGrowth ? '' : 'none';
   const months = termMonths(inv);
   $('#inv-years').value = Math.floor(months / 12);
   $('#inv-months').value = months % 12;
@@ -532,6 +553,11 @@ function resetInvestmentForm() {
   $('#inv-years').value = 5;
   $('#inv-months').value = 0;
   $('#inv-growth').value = 0;
+  $('#inv-use-premium').checked = false;
+  $('#inv-premium-growth').value = 0;
+  $('#inv-premium-amount').value = 0;
+  $('#inv-premium-label').style.display = 'none';
+  $('#inv-premium-amount-label').style.display = 'none';
   $('#inv-calculation').style.display = 'none';
   $('#inv-form-title').textContent = 'Add Investment';
   $('#inv-submit').textContent = 'Add Investment';
@@ -831,9 +857,19 @@ function bindEvents() {
     const months = (parseInt($('#inv-years').value, 10) || 0) * 12 + (parseInt($('#inv-months').value, 10) || 0);
     const monthly = parseFloat($('#inv-amount').value) || 0;
     const growth = parseFloat($('#inv-growth').value) || 0;
+    const usePremium = $('#inv-use-premium').checked;
+    const premiumGrowth = parseFloat($('#inv-premium-growth').value) || 0;
+    const premiumMonthly = parseFloat($('#inv-premium-amount').value) || 0;
     
     if (months > 0 && monthly > 0) {
-      const mockInv = { monthly, expectedGrowth: growth, termMonths: months };
+      const mockInv = {
+        monthly,
+        expectedGrowth: growth,
+        usePremiumGrowth: usePremium,
+        premiumGrowth: premiumGrowth,
+        premiumMonthly: premiumMonthly,
+        termMonths: months
+      };
       const calc = calculateInvestmentReturn(mockInv);
       $('#inv-calc-contributions').textContent = fmt(calc.totalContributions);
       $('#inv-calc-return').textContent = fmt(calc.expectedReturn);
@@ -844,7 +880,13 @@ function bindEvents() {
     }
   }
 
-  ['inv-amount', 'inv-years', 'inv-months', 'inv-growth'].forEach((id) => {
+  $('#inv-use-premium').addEventListener('change', (e) => {
+    $('#inv-premium-label').style.display = e.target.checked ? '' : 'none';
+    $('#inv-premium-amount-label').style.display = e.target.checked ? '' : 'none';
+    updateInvestmentPreview();
+  });
+
+  ['inv-amount', 'inv-years', 'inv-months', 'inv-growth', 'inv-premium-growth', 'inv-premium-amount'].forEach((id) => {
     $(`#${id}`).addEventListener('change', updateInvestmentPreview);
     $(`#${id}`).addEventListener('input', updateInvestmentPreview);
   });
